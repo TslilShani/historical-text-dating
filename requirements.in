@@ -1,0 +1,15 @@
+# Core ML dependencies
+numpy
+pandas
+scikit-learn
+matplotlib
+
+# Deep learning
+torch
+transformers
+
+# Configuration management
+hydra-core
+
+# Data handling
+datasets
