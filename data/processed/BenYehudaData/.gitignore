@@ -1,0 +1,7 @@
+.DS_Store
+venv/
+*.zip
+scraper/.env
+scraper/benyehuda_data/authors_progress.json
+public_domain_dump-*/
+*.log
