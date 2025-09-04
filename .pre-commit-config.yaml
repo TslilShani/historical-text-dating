@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: quality checks
+        name: Quality checks
+        entry: checks.sh -f
+        language: script
+        stages: [pre-commit]
+        pass_filenames: false
+

@@ -13,3 +13,6 @@ hydra-core
 
 # Data handling
 datasets
+
+# Tracking
+wandb

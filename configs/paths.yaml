@@ -1,0 +1,3 @@
+paths:
+  data_root: ${oc.env:DATA_ROOT,${hydra:runtime.cwd}/data}
+  results_root: ${hydra:runtime.output_dir}
