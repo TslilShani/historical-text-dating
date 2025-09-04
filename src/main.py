@@ -3,6 +3,7 @@ from constants import CONFIG_DIR
 import hydra
 import logging
 from hydra.utils import instantiate
+from src.utils import init_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,8 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base=None, config_path=CONFIG_DIR, config_name="defaults")
 def main(cfg: DictConfig):
 
-    # Debug: Print the entire configuration
+    tracker_run = init_tracker(cfg)
+    # DEBUG to check configs are loaded properly
     logger.debug("Configurations: %s", OmegaConf.to_yaml(cfg))
 
     # Load the model, tokenizer and dataset based on the configuration
@@ -27,6 +29,9 @@ def main(cfg: DictConfig):
 
     print("Loaded: ", type(tokenizer).__name__, type(model).__name__)
     print("output", decoded_output)
+
+    # Finish the tracker run
+    tracker_run.finish()
 
 
 if __name__ == "__main__":

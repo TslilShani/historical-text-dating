@@ -1,6 +1,7 @@
 defaults:
   - paths
   - model: multilingual_bert
+  - tracker: wandb
   - _self_
 
 hydra:

@@ -28,6 +28,24 @@ There's also an option to add configurations on the fly using `+`
 PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py +model.new_key=value
 ````
 
+### Tracker 
+This project uses `wandb` for tracking.
+To login with your credentials, run the following command:
+```bash
+wandb login
+``` 
+You can set the `WANDB_MODE` environment variable to control the tracking mode, or control it from hydra.
+By default, it is set to `online`, which means it will log to the cloud.
+If you wish to disable tracking, simply run with
+```bash
+PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py tracker.mode=disabled
+```
+Or
+```bash
+PYTHONPATH="$PWD/src:$PYTHONPATH" WANDB_MODE=disabled python src/main.py
+```
+
+
 ### Formatter 
 If you wish, you can use `black` to format the code upon pre-commit. 
 To install the dev-dependencies, run:

@@ -1,0 +1,5 @@
+project: "historical-text-dating-experiment"
+entity: "historical-text-dating"
+group: ${model.name}
+name: ${now:%Y-%m-%d_%H-%M-%S}
+mode: ${oc.env:WANDB_MODE,online}
