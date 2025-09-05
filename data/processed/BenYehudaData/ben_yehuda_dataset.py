@@ -17,12 +17,14 @@ class BenYehudaDataset(Dataset):
                  authors_dir: str,
                  txt_dir: str,
                  encoding: str = 'utf-8',
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 specific_comp_range: bool = False):
         self.samples = []
         self.author_years = {}
         self.txt_dir = Path(txt_dir)
         self.encoding = encoding
         self.verbose = verbose
+        self.specific_comp_range = specific_comp_range
 
         authors_dir = Path(authors_dir)
         pseudocatalogue_path = Path(pseudocatalogue_path)
@@ -77,7 +79,11 @@ class BenYehudaDataset(Dataset):
     def __getitem__(self, idx: int) -> Dict[str, object]:
         if idx >= len(self.samples):
             raise IndexError("Index out of range")
-        return self.samples[idx]
+        sample = self.samples[idx].copy()
+        if not self.specific_comp_range:
+            comp_date_start, comp_date_end = sample["comp_date"]
+            sample["comp_date"] = (comp_date_end // 10) * 10
+        return sample
 
 
 if __name__ == "__main__":

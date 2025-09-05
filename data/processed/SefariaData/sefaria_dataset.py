@@ -17,7 +17,8 @@ class SefariaDataset(Dataset):
     def __init__(self, 
                  sefaria_export_path: str,
                  encoding: str = 'utf-8',
-                 sample_count: Optional[int]=None):
+                 sample_count: Optional[int]=None,
+                 specific_comp_range: bool = False):
         """
         Initialize Sefaria dataset.
         
@@ -30,7 +31,8 @@ class SefariaDataset(Dataset):
         self.sefaria_path = Path(sefaria_export_path)
         self.encoding = encoding
         self.sample_count = sample_count
-        
+        self.specific_comp_range = specific_comp_range
+
         # Load all schema files to get metadata
         self._load_schemas()
         
@@ -202,16 +204,18 @@ class SefariaDataset(Dataset):
     def __getitem__(self, idx):
         if idx >= len(self.samples):
             raise IndexError("Index out of range")
-        
-        sample = self.samples[idx]
-        
+                
+        sample = self.samples[idx].copy()
+        if not self.specific_comp_range and sample["comp_date"]:
+            comp_date_start, comp_date_end = sample["comp_date"]
+            sample["comp_date"] = (comp_date_end // 10) * 10
+
         # Return text content and metadata
         return {
             'text': sample['text'],
             'title': sample['title'],
             'he_title': sample['he_title'],
             'comp_date': sample['comp_date'],
-            'file_path': sample['file_path']
         }
 
     def get_texts_by_date_range(self, start_year, end_year):

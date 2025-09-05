@@ -13,7 +13,7 @@ def print_dataset_statistics(dataset):
     total_chars = sum(len(sample['text']) for sample in dataset)
     
     # Estimated year statistics
-    comp_years_all = [date for sample in dataset if sample['comp_date'] for date in sample['comp_date']]
+    comp_years_all = [sample['comp_date'] for sample in dataset if sample['comp_date']]
     
     print(f"\nText Content:")
     print(f"  Total characters: {total_chars:,}")
@@ -28,17 +28,17 @@ def plot_dataset_statistics(dataset):
     """Plot statistics dataset."""
     
     # Prepare data for plotting
-    avg_comp_years = []
+    comp_years = []
     text_lengths = []
     year_differences = []
     
     for sample in dataset:
         # Collect composition years
         if sample['comp_date']:
-            avg_comp_years.append((sample['comp_date'][0] + sample['comp_date'][1]) / 2)
+            comp_years.append(sample['comp_date'])
             # Calculate difference between start and end years
-            year_diff = sample['comp_date'][1] - sample['comp_date'][0]
-            year_differences.append(year_diff)
+            # year_diff = sample['comp_date'][1] - sample['comp_date'][0]
+            # year_differences.append(year_diff)
         
         # Collect text lengths
         total_length = len(sample['text'])
@@ -48,14 +48,14 @@ def plot_dataset_statistics(dataset):
     plt.figure(figsize=(18, 5))
     
     # Composition year distribution
-    plt.subplot(1, 3, 1)
-    plt.hist(avg_comp_years, bins=30, color='lightgreen', edgecolor='black')
+    plt.subplot(1, 2, 1)
+    plt.hist(comp_years, bins=30, color='lightgreen', edgecolor='black')
     plt.title('Estimated Composition Year Distribution')
     plt.xlabel('Year')
     plt.ylabel('Count')
     
     # Text length distribution
-    plt.subplot(1, 3, 2)
+    plt.subplot(1, 2, 2)
     # Convert to thousands of characters for readability
     text_lengths_k = [length / 1000 for length in text_lengths]
     plt.hist(text_lengths_k, bins=50, color='skyblue', edgecolor='black')
@@ -64,13 +64,13 @@ def plot_dataset_statistics(dataset):
     plt.xlabel('Text Length (thousand characters)')
     plt.ylabel('Count (log scale)')
     
-    # Year difference distribution
-    plt.subplot(1, 3, 3)
-    plt.hist(year_differences, bins=50, color='salmon', edgecolor='black')
-    plt.yscale('log')
-    plt.title('Composition Year Range Distribution')
-    plt.xlabel('Year Range (end - start)')
-    plt.ylabel('Count (log scale)')
+    # # Year difference distribution
+    # plt.subplot(1, 2, 2)
+    # plt.hist(year_differences, bins=50, color='salmon', edgecolor='black')
+    # plt.yscale('log')
+    # plt.title('Composition Year Range Distribution')
+    # plt.xlabel('Year Range (end - start)')
+    # plt.ylabel('Count (log scale)')
     
     plt.subplots_adjust(wspace=0.3)
     plt.show()
