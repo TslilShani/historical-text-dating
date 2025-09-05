@@ -1,0 +1,13 @@
+defaults:
+  - paths
+  - model: multilingual_bert
+  - tracker: wandb
+  - _self_
+
+hydra:
+  run:
+    dir: ./outputs/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+  job_logging:
+    root:
+      level: INFO # Could be DEBUG, INFO, WARNING, ERROR, CRITICAL

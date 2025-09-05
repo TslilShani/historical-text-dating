@@ -20,3 +20,9 @@
 
 # Hydra's output
 outputs/*
+
+# Logging
+app.log
+
+# Ignore wandb's local output
+wandb/*
