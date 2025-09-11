@@ -2,6 +2,8 @@ defaults:
   - paths
   - model: multilingual_bert
   - tracker: wandb
+  - training: finetuning
+  - data: both
   - _self_
 
 hydra:

@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import csv
 from torch.utils.data import Dataset
+import os 
+from typing import Optional, List, Any
 
 import sys
 from pathlib import Path
@@ -85,6 +87,28 @@ class BenYehudaDataset(Dataset):
             sample["comp_date"] = (comp_date_end // 10) * 10
         return sample
 
+    @classmethod
+    def load_ben_yehuda_dataset(cls, cfg) -> Optional[List[Dict[str, Any]]]:
+        """Load Ben Yehuda dataset with configuration parameters"""
+        raw_data_path = "data/raw/BenYehudaData/"
+        # Get paths from config with fallbacks
+        pseudocatalogue_path = cfg.data_ben_yehuda.get("pseudocatalogue_path", raw_data_path + "public_domain_dump-2025-03/pseudocatalogue.csv")
+        authors_dir = cfg.data_ben_yehuda.get("authors_dir", raw_data_path + "scraper/benyehuda_data/authors")
+        txt_dir = cfg.data_ben_yehuda.get("txt_dir", raw_data_path + "public_domain_dump-2025-03/txt")
+        
+        # Get other parameters
+        encoding = cls.cfg.data.get("encoding", "utf-8")
+        verbose = cls.cfg.data.get("verbose", False)
+        specific_comp_range = cls.cfg.data.get("specific_comp_range", False)
+        
+        return cls(
+            pseudocatalogue_path=pseudocatalogue_path,
+            authors_dir=authors_dir,
+            txt_dir=txt_dir,
+            encoding=encoding,
+            verbose=verbose,
+            specific_comp_range=specific_comp_range
+        )
 
 if __name__ == "__main__":
     raw_data_path = "data/raw/BenYehudaData/"

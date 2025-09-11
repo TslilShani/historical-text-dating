@@ -5,6 +5,8 @@ from tqdm import tqdm
 import re
 from typing import Optional
 import re
+import os
+from typing import List, Dict, Any
 
 import sys
 from pathlib import Path
@@ -229,6 +231,26 @@ class SefariaDataset(Dataset):
         
         return results
 
+
+    @classmethod
+    def load_sefaria_dataset(cls, cfg) -> Optional[List[Dict[str, Any]]]:
+        """Load Sefaria dataset with configuration parameters"""
+        raw_data_path = "data/raw/SefariaData/"
+        # Get paths from config with fallbacks
+        sefaria_export_path = cfg.data.get("sefaria_export_path", raw_data_path + "Sefaria-Export-master")
+        
+        # Get other parameters
+        encoding = cfg.data.get("encoding", "utf-8")
+        verbose = cfg.data.get("verbose", True)
+        sample_count = cfg.data.get("sample_count", None)
+        specific_comp_range = cfg.data.get("specific_comp_range", False)
+        
+        return cls(
+            sefaria_export_path=sefaria_export_path,
+            encoding=encoding,
+            sample_count=sample_count,
+            specific_comp_range=specific_comp_range
+        )
 
 if __name__ == "__main__":
     raw_data_path = "data/raw/SefariaData/"
