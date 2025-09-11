@@ -1,0 +1,20 @@
+# Model head configuration for historical text dating
+# This configuration can be used with Hydra's instantiate function
+
+_target_: src.model_head.HistoricalTextDatingModel
+
+# Encoder configuration (will be passed from the main model config)
+encoder: ${model.encoder}
+
+# Head configuration
+head_config:
+hidden_sizes: [384, 128]  # Hidden layer sizes for the regression head
+dropout_rate: 0.1         # Dropout rate for regularization
+activation: "relu"        # Activation function (relu, gelu, tanh)
+pooling_strategy: "cls"   # Pooling strategy (cls, mean, max)
+min_date: 1000           # Minimum date in dataset
+max_date: 2024           # Maximum date in dataset
+normalize_output: true   # Whether to normalize output to [0,1] range
+
+# Model training configuration
+freeze_encoder: false      # Whether to freeze encoder parameters during training

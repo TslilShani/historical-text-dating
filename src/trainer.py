@@ -40,6 +40,7 @@ class Trainer:
             wandb.init(project=cfg.tracker.project, name=cfg.tracker.name, config=cfg)
             logger.info("WandB initialized for training")
 
+    # TODO: make it better with wandb artifacts
     def save_checkpoint(self):
         """Save model checkpoint"""
         if hasattr(self.cfg, "ckpt_path") and self.cfg.ckpt_path is not None:

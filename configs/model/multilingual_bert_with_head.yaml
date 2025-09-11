@@ -1,0 +1,23 @@
+name: google-bert/bert-base-multilingual-cased
+
+tokenizer:
+  _target_: transformers.AutoTokenizer.from_pretrained
+  pretrained_model_name_or_path: ${..name}
+
+encoder:
+    _target_: transformers.AutoModel.from_pretrained
+    pretrained_model_name_or_path: ${..name}
+
+# Model head for date prediction
+model_head:
+  _target_: src.model_head.HistoricalTextDatingModel
+  encoder: ${encoder}
+  head_config:
+    hidden_sizes: [384, 128]
+    dropout_rate: 0.1
+    activation: "relu"
+    pooling_strategy: "cls"
+    min_date: 1000
+    max_date: 2024
+    normalize_output: true
+  freeze_encoder: false
