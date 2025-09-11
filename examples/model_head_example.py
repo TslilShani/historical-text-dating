@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Example script demonstrating how to use the HistoricalTextDatingModel
 with Hydra configuration.
@@ -48,7 +49,7 @@ def main():
     print(f"Sample predictions: {predicted_dates}")
     
     # Example 2: Using with Hydra configuration
-    print("\\n=== Example 2: Hydra Configuration ===")
+    print("\n=== Example 2: Hydra Configuration ===")
     
     # Load configuration
     config = OmegaConf.load("configs/model/multilingual_bert_with_head.yaml")
@@ -65,7 +66,7 @@ def main():
     print(f"Model from config predictions: {predicted_dates_config}")
     
     # Example 3: Different pooling strategies
-    print("\\n=== Example 3: Different Pooling Strategies ===")
+    print("\n=== Example 3: Different Pooling Strategies ===")
     
     pooling_strategies = ["cls", "mean", "max"]
     

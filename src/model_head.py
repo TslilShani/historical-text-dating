@@ -238,18 +238,22 @@ class HistoricalTextDatingModel(nn.Module):
         self,
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
         **kwargs,
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         Forward pass through the complete model.
 
         Args:
             input_ids: Tokenized input text (batch_size, seq_len)
             attention_mask: Attention mask (batch_size, seq_len)
+            labels: Ground truth dates for loss calculation (batch_size,)
             **kwargs: Additional arguments passed to encoder
 
         Returns:
-            Predicted dates: Shape (batch_size,)
+            Tuple of (logits, loss) where:
+            - logits: Predicted dates (batch_size,)
+            - loss: Computed loss if labels provided, else None
         """
         # Get encoder outputs
         if hasattr(self.encoder, "forward"):
@@ -273,9 +277,29 @@ class HistoricalTextDatingModel(nn.Module):
             sequence_output = self.encoder(input_ids, attention_mask, **kwargs)
 
         # Pass through the prediction head
-        predicted_dates = self.head(sequence_output, attention_mask)
+        logits = self.head(sequence_output, attention_mask)
 
-        return predicted_dates
+        # Calculate loss if labels are provided
+        loss = None
+        if labels is not None:
+            loss = self.compute_loss(logits, labels)
+
+        return logits, loss
+
+    def compute_loss(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the loss between predictions and ground truth labels.
+
+        Args:
+            logits: Model predictions (batch_size,)
+            labels: Ground truth dates (batch_size,)
+
+        Returns:
+            Computed loss tensor
+        """
+        # Use Mean Squared Error loss for regression
+        loss_fn = nn.MSELoss()
+        return loss_fn(logits, labels.float())
 
     def get_encoder_outputs(
         self,
@@ -357,6 +381,7 @@ def create_model_head_config(
 
 
 # Example usage and configuration
+# Example usage and configuration
 if __name__ == "__main__":
     # Example of how to use the model
     import torch
@@ -382,8 +407,15 @@ if __name__ == "__main__":
     batch_size, seq_len = 2, 128
     input_ids = torch.randint(0, 1000, (batch_size, seq_len))
     attention_mask = torch.ones(batch_size, seq_len)
+    labels = torch.tensor([1800.0, 1950.0])  # Sample ground truth dates
 
-    # Forward pass
-    predicted_dates = model(input_ids, attention_mask)
-    print(f"Predicted dates shape: {predicted_dates.shape}")
-    print(f"Sample predictions: {predicted_dates}")
+    # Forward pass with labels (training mode)
+    logits, loss = model(input_ids, attention_mask, labels=labels)
+    print(f"Logits shape: {logits.shape}")
+    print(f"Sample logits: {logits}")
+    print(f"Loss: {loss}")
+
+    # Forward pass without labels (inference mode)
+    logits, loss = model(input_ids, attention_mask)
+    print(f"\nInference mode - Logits: {logits}")
+    print(f"Inference mode - Loss: {loss}")

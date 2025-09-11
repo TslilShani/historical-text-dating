@@ -9,18 +9,16 @@ from pathlib import Path
 
 def run_command(cmd, description):
     """Run a command and print the result"""
-    print(f"\n{=*60}")
     print(f"Running: {description}")
     print(f"Command: {cmd}")
-    print(f"{=*60}")
     
     try:
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
-        print("✅ SUCCESS")
+        print("SUCCESS")
         if result.stdout:
             print("Output:", result.stdout)
     except subprocess.CalledProcessError as e:
-        print("❌ FAILED")
+        print("FAILED")
         print("Error:", e.stderr)
         return False
     return True
@@ -37,7 +35,7 @@ def main():
     )
     
     if not success:
-        print("❌ Basic test failed. Please check your setup.")
+        print("Basic test failed. Please check your setup.")
         return
     
     # Test with Ben Yehuda dataset
