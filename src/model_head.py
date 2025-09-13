@@ -55,6 +55,7 @@ class DatePredictionHead(nn.Module):
         self.min_date = min_date
         self.max_date = max_date
         self.normalize_output = normalize_output
+        self.dropout_rate = dropout_rate
 
         # Set up hidden layer sizes
         if hidden_sizes is None:
@@ -380,7 +381,6 @@ def create_model_head_config(
     return DictConfig(config)
 
 
-# Example usage and configuration
 # Example usage and configuration
 if __name__ == "__main__":
     # Example of how to use the model

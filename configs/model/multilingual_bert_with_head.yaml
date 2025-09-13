@@ -11,7 +11,6 @@ encoder:
 # Model head for date prediction
 model_head:
   _target_: src.model_head.HistoricalTextDatingModel
-  encoder: ${encoder}
   head_config:
     hidden_sizes: [384, 128]
     dropout_rate: 0.1

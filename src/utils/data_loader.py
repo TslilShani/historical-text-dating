@@ -210,8 +210,19 @@ class DataLoader:
         elif self.dataset_name == "sefaria":
             dataset = SefariaDataset.load_sefaria_dataset(self.cfg)
         elif self.dataset_name == "all":
-            sefaria_dataset = SefariaDataset.load_sefaria_dataset(self.cfg)
-            ben_yehuda_dataset = BenYehudaDataset.load_ben_yehuda_dataset(self.cfg)
+            sefaria_dataset: SefariaDataset = SefariaDataset.load_sefaria_dataset(
+                self.cfg
+            )
+            ben_yehuda_dataset: BenYehudaDataset = (
+                BenYehudaDataset.load_ben_yehuda_dataset(self.cfg)
+            )
+            # A trick to unite the labels from both datasets
+            all_classes = sorted(
+                ben_yehuda_dataset.unique_date_ranges
+                + sefaria_dataset.unique_date_ranges
+            )
+            sefaria_dataset._unique_date_ranges = all_classes
+            ben_yehuda_dataset._unique_date_ranges = all_classes
             dataset = ConcatDataset([sefaria_dataset, ben_yehuda_dataset])
         else:
             logger.error(f"Unknown dataset: {self.dataset_name}")

@@ -5,6 +5,7 @@ import logging
 from hydra.utils import instantiate
 from src.utils import init_tracker, DataLoader
 from src.trainer import Trainer
+from src.model_head import HistoricalTextDatingModel, create_model_head_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,14 @@ def main(cfg: DictConfig):
     logger.info("Loading the tokenizer...")
     tokenizer = instantiate(cfg.model.tokenizer)
     logger.info("Loading the model...")
-    model = instantiate(cfg.model.encoder)
+    encoder = instantiate(cfg.model.encoder)
+
+    model_head_config = create_model_head_config(**cfg.model.model_head.head_config)
+    model = HistoricalTextDatingModel(
+        encoder=encoder,
+        head_config=model_head_config,
+        freeze_encoder=True,  # Freeze encoder to not change bert
+    )
 
     # Load datasets using the data loader
     logger.info("Loading datasets...")

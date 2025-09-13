@@ -20,7 +20,8 @@ class SefariaDataset(Dataset):
                  sefaria_export_path: str,
                  encoding: str = 'utf-8',
                  sample_count: Optional[int]=None,
-                 specific_comp_range: bool = False):
+                 specific_comp_range: bool = False,
+                 return_as_labels: bool = False):
         """
         Initialize Sefaria dataset.
         
@@ -34,6 +35,7 @@ class SefariaDataset(Dataset):
         self.encoding = encoding
         self.sample_count = sample_count
         self.specific_comp_range = specific_comp_range
+        self._unique_date_ranges = set()
 
         # Load all schema files to get metadata
         self._load_schemas()
@@ -130,6 +132,8 @@ class SefariaDataset(Dataset):
                     'comp_date': metadata.get('comp_date'),
                     'file_path': str(merged_file)
                 }
+                if not sample['comp_date']:
+                    continue
                 
                 self.samples.append(sample)
                 
@@ -211,6 +215,15 @@ class SefariaDataset(Dataset):
         if not self.specific_comp_range and sample["comp_date"]:
             comp_date_start, comp_date_end = sample["comp_date"]
             sample["comp_date"] = (comp_date_end // 10) * 10
+            self._unique_date_ranges.add(sample["comp_date"])
+        if self.return_as_labels:
+            if self.specific_comp_range:
+                raise Exception("What are you doing?")
+            # Return a one-hot encoding of the comp_date with respect to unique_date_ranges
+            comp_date = sample["comp_date"]
+            unique_ranges = self.unique_date_ranges
+            one_hot = [1 if comp_date == d else 0 for d in unique_ranges]
+            return sample["text"], one_hot
 
         # Return text content and metadata
         return {
@@ -219,6 +232,10 @@ class SefariaDataset(Dataset):
             'he_title': sample['he_title'],
             'comp_date': sample['comp_date'],
         }
+
+    @property
+    def unique_date_ranges(self):
+        return sorted(list(self._unique_date_ranges))
 
     def get_texts_by_date_range(self, start_year, end_year):
         """Get all texts within a date range."""

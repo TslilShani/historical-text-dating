@@ -20,13 +20,15 @@ class BenYehudaDataset(Dataset):
                  txt_dir: str,
                  encoding: str = 'utf-8',
                  verbose: bool = False,
-                 specific_comp_range: bool = False):
+                 specific_comp_range: bool = False,
+                 return_as_labels: bool = False):
         self.samples = []
         self.author_years = {}
         self.txt_dir = Path(txt_dir)
         self.encoding = encoding
         self.verbose = verbose
         self.specific_comp_range = specific_comp_range
+        self._unique_date_ranges = set()
 
         authors_dir = Path(authors_dir)
         pseudocatalogue_path = Path(pseudocatalogue_path)
@@ -85,7 +87,19 @@ class BenYehudaDataset(Dataset):
         if not self.specific_comp_range:
             comp_date_start, comp_date_end = sample["comp_date"]
             sample["comp_date"] = (comp_date_end // 10) * 10
+            self._unique_date_ranges.add(sample["comp_date"])
+        if self.return_as_labels:
+            # Return a one-hot encoding of the comp_date with respect to unique_date_ranges
+            comp_date = sample["comp_date"]
+            unique_ranges = self.unique_date_ranges
+            one_hot = [1 if comp_date == d else 0 for d in unique_ranges]
+            return sample["text"], one_hot
+
         return sample
+
+    @property
+    def unique_date_ranges(self):
+        return sorted(list(self._unique_date_ranges))
 
     @classmethod
     def load_ben_yehuda_dataset(cls, cfg) -> Optional[List[Dict[str, Any]]]:
