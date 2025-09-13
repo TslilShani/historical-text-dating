@@ -235,6 +235,31 @@ class HistoricalTextDatingModel(nn.Module):
                 param.requires_grad = False
             logger.info("Encoder parameters frozen")
 
+    def get_model_file_name(self):
+        """
+        Generate a model file name that is indicative of the used configurations.
+        """
+        encoder_name = getattr(self.encoder, "name", None)
+        if encoder_name is None and hasattr(self.encoder, "config"):
+            encoder_name = getattr(self.encoder.config, "name", None)
+        if encoder_name is None and hasattr(self.encoder, "config"):
+            encoder_name = getattr(self.encoder.config, "model_type", "encoder")
+        if encoder_name is None:
+            encoder_name = self.encoder.__class__.__name__
+
+        head_type = self.head.__class__.__name__
+        head_cfg_str = "_".join(
+            f"{k}{v}"
+            for k, v in self.head.__dict__.items()
+            if not k.startswith("_") and isinstance(v, (int, float, str, bool))
+        )
+        freeze_str = "frozen" if self.freeze_encoder else "unfrozen"
+
+        file_name = f"{encoder_name}_{head_type}_{head_cfg_str}_{freeze_str}.pt"
+        # Clean up file name (remove spaces, problematic chars)
+        file_name = file_name.replace(" ", "").replace("/", "-")
+        return file_name
+
     def forward(
         self,
         input_ids: torch.Tensor,

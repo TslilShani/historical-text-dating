@@ -3,10 +3,12 @@ TAU NLP course 2025
 Enhanced training loop with WandB and Hydra integration
 """
 
+import os
 import math
 import logging
 from typing import Optional, Dict, Any
 from omegaconf import DictConfig
+from hydra.core.hydra_config import HydraConfig
 
 from tqdm import tqdm
 import numpy as np
@@ -15,6 +17,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 import wandb
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +32,15 @@ class Trainer:
         self.cfg = cfg
         self.training_cfg = cfg.training
 
+        # Set random seed for reproducibility
+        if hasattr(cfg.training, "seed") and cfg.training.seed is not None:
+            torch.manual_seed(cfg.training.seed)
+            np.random.seed(cfg.training.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed(cfg.training.seed)
+                torch.cuda.manual_seed_all(cfg.training.seed)
+            logger.info(f"Random seed set to {cfg.training.seed}")
+
         # Set device
         self.device = "cpu"
         if torch.cuda.is_available():
@@ -41,22 +53,65 @@ class Trainer:
             wandb.init(project=cfg.tracker.project, name=cfg.tracker.name, config=cfg)
             logger.info("WandB initialized for training")
 
-    # TODO: make it better with wandb artifacts
-    def save_checkpoint(self):
+    # # TODO: make it better with wandb artifacts
+    # def save_checkpoint(self):
+    #         ckpt_model = (
+    #             self.model.module if hasattr(self.model, "module") else self.model
+    #         )
+    #         logger.info("saving %s", self.cfg.training.ckpt_path)
+    #         torch.save(ckpt_model.state_dict(), self.cfg.training.ckpt_path)
+
+    #         # Log checkpoint to WandB
+    #         if self.use_wandb and wandb.run is not None:
+    #             wandb.save(self.cfg.training.ckpt_path)
+
+    def save_checkpoint(self, results_dict):
         """Save model checkpoint"""
         if (
             hasattr(self.cfg.training, "ckpt_path")
             and self.cfg.training.ckpt_path is not None
         ):
-            ckpt_model = (
-                self.model.module if hasattr(self.model, "module") else self.model
-            )
-            logger.info("saving %s", self.cfg.training.ckpt_path)
-            torch.save(ckpt_model.state_dict(), self.cfg.training.ckpt_path)
+            model_file_name = self.model.get_model_file_name()
+            model_path = os.path.join(self.cfg.training.ckpt_path, model_file_name)
+            # Save locally
+            torch.save(self.model.state_dict(), model_path)
+            logger.info(f"Model state saved to {model_path}")
 
-            # Log checkpoint to WandB
-            if self.use_wandb and wandb.run is not None:
-                wandb.save(self.cfg.training.ckpt_path)
+            # Prepare artifact for wandb
+            art_name = f"{wandb.run.group}-{wandb.run.id}".replace("/", "-").replace(
+                " ", ""
+            )
+            artifact_metadata = {
+                "metrics": {**results_dict},
+                "hydra_configs": HydraConfig.get().overrides.task,
+            }
+            artifact = wandb.Artifact(
+                name=art_name,
+                type="model",
+                description=f"Trained {model_file_name} model with seed {self.cfg.training.seed}",
+                metadata=artifact_metadata,
+            )
+
+            # Add results to the run itself
+            for key, value in artifact_metadata["metrics"].items():
+                wandb.summary[key] = value
+
+            artifact.add_file(model_path, name=model_file_name)
+
+            # tags
+            tags = [
+                str(self.train_dataset.get_dataset_name()),
+                "seed-" + str(self.cfg.training.seed),
+            ]
+
+            # Include the files under .hydra in the artifact
+            # hydra_run_dir = HydraConfig.get().runtime.output_dir
+            # results_file_name = "results" + model_file_name
+            # if os.path.isdir(hydra_run_dir):
+            #     artifact.add_file(os.path.join(hydra_run_dir, results_file_name), name=results_file_name)
+
+            # Save the artifact to wandb
+            wandb.log_artifact(artifact, tags=tags)
 
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None):
         """Log metrics to WandB"""
@@ -122,6 +177,8 @@ class Trainer:
             )
 
             losses = []
+            all_predictions = []
+            all_labels = []
             pbar = (
                 tqdm(enumerate(loader), total=len(loader))
                 if is_train
@@ -140,6 +197,10 @@ class Trainer:
                         loss.mean()
                     )  # collapse all losses if they are scattered on multiple gpus
                     losses.append(loss.item())
+
+                # Collect predictions and labels for metrics calculation
+                all_predictions.append(logits.detach().cpu().numpy())
+                all_labels.append(y.detach().cpu().numpy())
 
                 if is_train:
                     # backprop and update the parameters
@@ -202,18 +263,78 @@ class Trainer:
 
                 step += 1
 
+            # Calculate metrics
+            all_predictions = np.concatenate(all_predictions, axis=0)
+            all_labels = np.concatenate(all_labels, axis=0)
+
+            # Convert one-hot labels to binary for each class
+            # For multi-class ROC AUC, we need to use one-vs-rest approach
+            try:
+                if all_labels.shape[1] > 1:  # Multi-class case (one-hot encoded)
+                    # Calculate ROC AUC for each class (one-vs-rest)
+                    roc_auc_scores = []
+                    pr_auc_scores = []
+
+                    for class_idx in range(all_labels.shape[1]):
+                        class_labels = all_labels[:, class_idx]
+                        class_predictions = (
+                            all_predictions[:, class_idx]
+                            if all_predictions.shape[1] > 1
+                            else all_predictions.flatten()
+                        )
+
+                        # Only calculate metrics if class has both positive and negative samples
+                        if len(np.unique(class_labels)) > 1:
+                            roc_auc = roc_auc_score(class_labels, class_predictions)
+                            pr_auc = average_precision_score(
+                                class_labels, class_predictions
+                            )
+                            roc_auc_scores.append(roc_auc)
+                            pr_auc_scores.append(pr_auc)
+
+                    # Calculate macro-averaged metrics
+                    roc_auc = np.mean(roc_auc_scores) if roc_auc_scores else 0.0
+                    pr_auc = np.mean(pr_auc_scores) if pr_auc_scores else 0.0
+                else:  # Binary case
+                    roc_auc = roc_auc_score(
+                        all_labels.flatten(), all_predictions.flatten()
+                    )
+                    pr_auc = average_precision_score(
+                        all_labels.flatten(), all_predictions.flatten()
+                    )
+            except Exception as e:
+                logger.warning(f"Could not calculate AUC metrics: {e}")
+                roc_auc = 0.0
+                pr_auc = 0.0
+
             # Log epoch metrics
             avg_loss = np.mean(losses)
             if not is_train:
                 logger.info("test loss: %f", avg_loss)
-                self.log_metrics({"eval/loss": avg_loss, "eval/epoch": epoch})
+                res = {
+                    "eval/loss": avg_loss,
+                    "eval/epoch": epoch,
+                    "eval/roc_auc": roc_auc,
+                    "eval/pr_auc": pr_auc,
+                }
+                # TODO - maybe remove
+                self.log_metrics(res)
 
                 # Track best model
                 if avg_loss < best_loss:
                     best_loss = avg_loss
-                    self.save_checkpoint()
+                    # self.save_checkpoint(res)
             else:
-                self.log_metrics({"train/epoch_loss": avg_loss, "train/epoch": epoch})
+                res = {
+                    "train/epoch_loss": avg_loss,
+                    "train/epoch": epoch,
+                    "train/roc_auc": roc_auc,
+                    "train/pr_auc": pr_auc,
+                }
+                self.log_metrics(res)
+
+            # Save checkpoint at end of each epoch
+            # self.save_checkpoint(res)
 
         # Initialize token counter for learning rate decay
         self.tokens = 0
@@ -225,9 +346,7 @@ class Trainer:
             run_epoch("train")
             if self.test_dataset is not None:
                 run_epoch("test")
-
-            # Save checkpoint at end of each epoch
-            self.save_checkpoint()
+        self.save_checkpoint({})
 
         # Log final metrics
         if self.use_wandb and wandb.run is not None:

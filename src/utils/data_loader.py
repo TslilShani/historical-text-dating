@@ -108,6 +108,9 @@ class TokenizedDataset(Dataset):
             unique_date_ranges if unique_date_ranges else list(range(1000, 2025, 25))
         )  # 25-year bins from 1000 to 2000
 
+    def get_dataset_name(self):
+        return f"TokenizedDataset-{self.dataset.__class__.__name__}-maxlen{self.max_length}"
+
     def __len__(self):
         return len(self.dataset)
 
