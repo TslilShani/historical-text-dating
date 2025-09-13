@@ -36,6 +36,7 @@ class SefariaDataset(Dataset):
         self.sample_count = sample_count
         self.specific_comp_range = specific_comp_range
         self._unique_date_ranges = set()
+        self.return_as_labels = return_as_labels
 
         # Load all schema files to get metadata
         self._load_schemas()
@@ -135,6 +136,11 @@ class SefariaDataset(Dataset):
                 if not sample['comp_date']:
                     continue
                 
+                if not self.specific_comp_range and sample["comp_date"]:
+                    comp_date_start, comp_date_end = sample["comp_date"]
+                    sample["comp_date"] = (comp_date_end // 10) * 10
+                    self._unique_date_ranges.add(sample["comp_date"])
+                    
                 self.samples.append(sample)
                 
             except Exception as e:
@@ -212,10 +218,6 @@ class SefariaDataset(Dataset):
             raise IndexError("Index out of range")
                 
         sample = self.samples[idx].copy()
-        if not self.specific_comp_range and sample["comp_date"]:
-            comp_date_start, comp_date_end = sample["comp_date"]
-            sample["comp_date"] = (comp_date_end // 10) * 10
-            self._unique_date_ranges.add(sample["comp_date"])
         if self.return_as_labels:
             if self.specific_comp_range:
                 raise Exception("What are you doing?")
@@ -235,7 +237,7 @@ class SefariaDataset(Dataset):
 
     @property
     def unique_date_ranges(self):
-        return sorted(list(self._unique_date_ranges))
+        return sorted(list(self._unique_date_ranges.copy()))
 
     def get_texts_by_date_range(self, start_year, end_year):
         """Get all texts within a date range."""

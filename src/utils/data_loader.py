@@ -98,10 +98,15 @@ class SplitDataset(Dataset):
 class TokenizedDataset(Dataset):
     """Dataset wrapper that handles tokenization"""
 
-    def __init__(self, dataset: Dataset, tokenizer, max_length: int = 512):
+    def __init__(
+        self, dataset: Dataset, tokenizer, unique_date_ranges, max_length: int = 512
+    ):
         self.dataset = dataset
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.unique_date_ranges = (
+            unique_date_ranges if unique_date_ranges else list(range(1000, 2025, 25))
+        )  # 25-year bins from 1000 to 2000
 
     def __len__(self):
         return len(self.dataset)
@@ -118,16 +123,36 @@ class TokenizedDataset(Dataset):
         else:
             date_value = date
 
+        # Create one-hot encoding for the date
+        one_hot = torch.zeros(len(self.unique_date_ranges), dtype=torch.float)
+        try:
+            # Find the index of the date in unique_date_ranges
+            if date_value in self.unique_date_ranges:
+                date_idx = self.unique_date_ranges.index(date_value)
+                one_hot[date_idx] = 1.0
+            else:
+                # If exact date not found, find the closest one
+                closest_idx = min(
+                    range(len(self.unique_date_ranges)),
+                    key=lambda i: abs(self.unique_date_ranges[i] - date_value),
+                )
+                one_hot[closest_idx] = 1.0
+        except Exception as e:
+            logger.warning(
+                f"Error creating one-hot encoding for date {date_value}: {e}"
+            )
+            raise e
+
         # Tokenize text
         inputs = self.tokenizer(
             text,
             return_tensors="pt",
-            padding=True,
+            padding="max_length",  # Use max_length instead of True
             truncation=True,
             max_length=self.max_length,
         )
 
-        return inputs["input_ids"].squeeze(), torch.tensor(date_value, dtype=torch.long)
+        return inputs["input_ids"].squeeze(), one_hot
 
 
 class SampleDataset(Dataset):
@@ -199,6 +224,7 @@ class DataLoader:
         self.cfg = cfg
         self.dataset_name = cfg.data.get("dataset_name", "ben_yehuda")
         self.max_length = cfg.data.get("max_length", 512)
+        self.unique_date_ranges = []
 
     def load_base_dataset(self) -> Dataset:
         """Load the base dataset based on configuration"""
@@ -217,12 +243,10 @@ class DataLoader:
                 BenYehudaDataset.load_ben_yehuda_dataset(self.cfg)
             )
             # A trick to unite the labels from both datasets
-            all_classes = sorted(
+            self.unique_date_ranges = sorted(
                 ben_yehuda_dataset.unique_date_ranges
                 + sefaria_dataset.unique_date_ranges
             )
-            sefaria_dataset._unique_date_ranges = all_classes
-            ben_yehuda_dataset._unique_date_ranges = all_classes
             dataset = ConcatDataset([sefaria_dataset, ben_yehuda_dataset])
         else:
             logger.error(f"Unknown dataset: {self.dataset_name}")
@@ -290,9 +314,13 @@ class DataLoader:
         """Create tokenized datasets with the provided tokenizer"""
         train_dataset, eval_dataset = self.load_datasets()
 
-        train_tokenized = TokenizedDataset(train_dataset, tokenizer, self.max_length)
+        train_tokenized = TokenizedDataset(
+            train_dataset, tokenizer, self.unique_date_ranges, self.max_length
+        )
         eval_tokenized = (
-            TokenizedDataset(eval_dataset, tokenizer, self.max_length)
+            TokenizedDataset(
+                eval_dataset, tokenizer, self.unique_date_ranges, self.max_length
+            )
             if eval_dataset
             else None
         )

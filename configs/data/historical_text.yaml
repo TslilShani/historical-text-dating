@@ -1,12 +1,13 @@
 # Data configuration for historical text dating
-dataset_name: "both"  # Options: "ben_yehuda", "sefaria", "both"
+dataset_name: "all"  # Options: "ben_yehuda", "sefaria", "all"
 max_length: 512
 
 # Dataset loading parameters
 encoding: "utf-8"
-verbose: true
+verbose: false
 specific_comp_range: false
-return_as_labels: true
+return_as_labels: false
+sample_count: 100
 
 # Data splitting
 train_ratio: 0.8

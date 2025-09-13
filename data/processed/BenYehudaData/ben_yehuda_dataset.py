@@ -5,6 +5,7 @@ import csv
 from torch.utils.data import Dataset
 import os 
 from typing import Optional, List, Any
+from tqdm import tqdm
 
 import sys
 from pathlib import Path
@@ -20,6 +21,7 @@ class BenYehudaDataset(Dataset):
                  txt_dir: str,
                  encoding: str = 'utf-8',
                  verbose: bool = False,
+                 sample_count: int = None,
                  specific_comp_range: bool = False,
                  return_as_labels: bool = False):
         self.samples = []
@@ -27,8 +29,10 @@ class BenYehudaDataset(Dataset):
         self.txt_dir = Path(txt_dir)
         self.encoding = encoding
         self.verbose = verbose
+        self.sample_count = sample_count
         self.specific_comp_range = specific_comp_range
         self._unique_date_ranges = set()
+        self.return_as_labels = return_as_labels
 
         authors_dir = Path(authors_dir)
         pseudocatalogue_path = Path(pseudocatalogue_path)
@@ -60,7 +64,10 @@ class BenYehudaDataset(Dataset):
         # Read pseudocatalogue.csv
         with pseudocatalogue_path.open(encoding=encoding) as f:
             reader = csv.DictReader(f)
-            for row in reader:
+
+            for it, row in tqdm(enumerate(reader), desc="Loading Ben Yehuda texts", total=sample_count):
+                if self.sample_count is not None and it >= sample_count:
+                    break
                 path = row.get('path', '').strip()
                 author_name = row.get("authors")
                 author_id = int(path.split('/')[1][1:])
@@ -72,7 +79,12 @@ class BenYehudaDataset(Dataset):
                 if author_name in self.author_years and txt_path.is_file():
                     with txt_path.open(encoding=self.encoding) as txt_file:
                         text = txt_file.read()
-                    self.samples.append({"text": text, "comp_date": self.author_years[author_name]})
+                    sample = {"text": text, "comp_date": self.author_years[author_name]}
+                    if not self.specific_comp_range:
+                        comp_date_start, comp_date_end = sample["comp_date"]
+                        sample["comp_date"] = (comp_date_end // 10) * 10
+                        self._unique_date_ranges.add(sample["comp_date"])
+                    self.samples.append(sample)
                 else:
                     pass
                     # print(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
@@ -84,10 +96,6 @@ class BenYehudaDataset(Dataset):
         if idx >= len(self.samples):
             raise IndexError("Index out of range")
         sample = self.samples[idx].copy()
-        if not self.specific_comp_range:
-            comp_date_start, comp_date_end = sample["comp_date"]
-            sample["comp_date"] = (comp_date_end // 10) * 10
-            self._unique_date_ranges.add(sample["comp_date"])
         if self.return_as_labels:
             # Return a one-hot encoding of the comp_date with respect to unique_date_ranges
             comp_date = sample["comp_date"]
@@ -106,14 +114,15 @@ class BenYehudaDataset(Dataset):
         """Load Ben Yehuda dataset with configuration parameters"""
         raw_data_path = "data/raw/BenYehudaData/"
         # Get paths from config with fallbacks
-        pseudocatalogue_path = cfg.data_ben_yehuda.get("pseudocatalogue_path", raw_data_path + "public_domain_dump-2025-03/pseudocatalogue.csv")
-        authors_dir = cfg.data_ben_yehuda.get("authors_dir", raw_data_path + "scraper/benyehuda_data/authors")
-        txt_dir = cfg.data_ben_yehuda.get("txt_dir", raw_data_path + "public_domain_dump-2025-03/txt")
+        pseudocatalogue_path = cfg.data.get("pseudocatalogue_path", raw_data_path + "public_domain_dump-2025-03/pseudocatalogue.csv")
+        authors_dir = cfg.data.get("authors_dir", raw_data_path + "scraper/benyehuda_data/authors")
+        txt_dir = cfg.data.get("txt_dir", raw_data_path + "public_domain_dump-2025-03/txt")
         
         # Get other parameters
-        encoding = cls.cfg.data.get("encoding", "utf-8")
-        verbose = cls.cfg.data.get("verbose", False)
-        specific_comp_range = cls.cfg.data.get("specific_comp_range", False)
+        encoding = cfg.data.get("encoding", "utf-8")
+        verbose = cfg.data.get("verbose", False)
+        specific_comp_range = cfg.data.get("specific_comp_range", False)
+        sample_count = cfg.data.get("sample_count", None)
         
         return cls(
             pseudocatalogue_path=pseudocatalogue_path,
@@ -121,6 +130,7 @@ class BenYehudaDataset(Dataset):
             txt_dir=txt_dir,
             encoding=encoding,
             verbose=verbose,
+            sample_count=sample_count,
             specific_comp_range=specific_comp_range
         )
 

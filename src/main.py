@@ -26,16 +26,19 @@ def main(cfg: DictConfig):
     encoder = instantiate(cfg.model.encoder)
 
     model_head_config = create_model_head_config(**cfg.model.model_head.head_config)
-    model = HistoricalTextDatingModel(
-        encoder=encoder,
-        head_config=model_head_config,
-        freeze_encoder=True,  # Freeze encoder to not change bert
-    )
 
     # Load datasets using the data loader
     logger.info("Loading datasets...")
     data_loader = DataLoader(cfg)
     train_dataset, eval_dataset = data_loader.create_tokenized_datasets(tokenizer)
+
+    model_head_config["num_classes"] = len(train_dataset[0][1])
+
+    model = HistoricalTextDatingModel(
+        encoder=encoder,
+        head_config=model_head_config,
+        freeze_encoder=True,  # Freeze encoder to not change bert
+    )
 
     # Create trainer from config
     logger.info("Creating trainer...")
