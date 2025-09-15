@@ -252,9 +252,11 @@ class SefariaDataset(Dataset):
 
 
     @classmethod
-    def load_sefaria_dataset(cls, cfg) -> Optional[List[Dict[str, Any]]]:
+    def load_sefaria_dataset(cls, cfg, base_path: str = None) -> Optional[List[Dict[str, Any]]]:
         """Load Sefaria dataset with configuration parameters"""
         raw_data_path = "data/raw/SefariaData/"
+        if base_path:
+            raw_data_path = base_path + raw_data_path
         # Get paths from config with fallbacks
         sefaria_export_path = cfg.data.get("sefaria_export_path", raw_data_path + "Sefaria-Export-master")
         

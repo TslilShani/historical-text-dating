@@ -29,9 +29,6 @@ class DatePredictionHead(nn.Module):
         hidden_sizes: Optional[list] = None,
         activation: str = "relu",
         pooling_strategy: str = "cls",  # "cls", "mean", "max"
-        min_date: int = 1000,
-        max_date: int = 2024,
-        normalize_output: bool = True,
     ):
         """
         Initialize the date prediction head.
@@ -43,18 +40,12 @@ class DatePredictionHead(nn.Module):
             hidden_sizes: List of hidden layer sizes (if None, uses [encoder_hidden_size//2])
             activation: Activation function ("relu", "gelu", "tanh")
             pooling_strategy: How to pool the sequence output ("cls", "mean", "max")
-            min_date: Minimum date in the dataset
-            max_date: Maximum date in the dataset
-            normalize_output: Whether to normalize output to [0, 1] range
         """
         super().__init__()
 
         self.encoder_hidden_size = encoder_hidden_size
         self.num_classes = num_classes
         self.pooling_strategy = pooling_strategy
-        self.min_date = min_date
-        self.max_date = max_date
-        self.normalize_output = normalize_output
         self.dropout_rate = dropout_rate
 
         # Set up hidden layer sizes
@@ -172,19 +163,12 @@ class DatePredictionHead(nn.Module):
         # Pass through the regression head
         logits = self.head(pooled_output)
 
-        # Normalize output to [0, 1] range if requested
-        if self.normalize_output:
-            # Normalize to [0, 1] based on min/max dates
-            date_range = self.max_date - self.min_date
-            normalized_logits = torch.sigmoid(logits)
-            # Scale back to date range
-            predicted_dates = normalized_logits * date_range + self.min_date
-        else:
-            predicted_dates = logits
-
         # Squeeze if single output
         if self.num_classes == 1:
             predicted_dates = predicted_dates.squeeze(-1)
+        else:
+            # Apply softmax activation to normalize output
+            predicted_dates = torch.softmax(logits, dim=-1)
 
         return predicted_dates
 
@@ -367,9 +351,6 @@ def create_model_head_config(
     dropout_rate: float = 0.1,
     activation: str = "relu",
     pooling_strategy: str = "cls",
-    min_date: int = 1000,
-    max_date: int = 2024,
-    normalize_output: bool = True,
 ) -> DictConfig:
     """
     Create a configuration dictionary for the model head.
@@ -381,9 +362,6 @@ def create_model_head_config(
         dropout_rate: Dropout rate for regularization
         activation: Activation function
         pooling_strategy: Pooling strategy for sequence output
-        min_date: Minimum date in dataset
-        max_date: Maximum date in dataset
-        normalize_output: Whether to normalize output
 
     Returns:
         DictConfig: Configuration for the model head
@@ -398,9 +376,6 @@ def create_model_head_config(
         "dropout_rate": dropout_rate,
         "activation": activation,
         "pooling_strategy": pooling_strategy,
-        "min_date": min_date,
-        "max_date": max_date,
-        "normalize_output": normalize_output,
     }
 
     return DictConfig(config)

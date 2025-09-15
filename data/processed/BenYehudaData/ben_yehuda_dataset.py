@@ -110,9 +110,11 @@ class BenYehudaDataset(Dataset):
         return sorted(list(self._unique_date_ranges))
 
     @classmethod
-    def load_ben_yehuda_dataset(cls, cfg) -> Optional[List[Dict[str, Any]]]:
+    def load_ben_yehuda_dataset(cls, cfg, base_path: str = None) -> Optional[List[Dict[str, Any]]]:
         """Load Ben Yehuda dataset with configuration parameters"""
         raw_data_path = "data/raw/BenYehudaData/"
+        if base_path:
+            raw_data_path = base_path + raw_data_path
         # Get paths from config with fallbacks
         pseudocatalogue_path = cfg.data.get("pseudocatalogue_path", raw_data_path + "public_domain_dump-2025-03/pseudocatalogue.csv")
         authors_dir = cfg.data.get("authors_dir", raw_data_path + "scraper/benyehuda_data/authors")

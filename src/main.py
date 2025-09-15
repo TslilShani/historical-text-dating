@@ -6,12 +6,14 @@ from hydra.utils import instantiate
 from src.utils import init_tracker, DataLoader
 from src.trainer import Trainer
 from src.model_head import HistoricalTextDatingModel, create_model_head_config
+from src.utils.set_seed import set_seed
 
 logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base=None, config_path=CONFIG_DIR, config_name="defaults")
 def main(cfg: DictConfig):
+    set_seed(cfg)
 
     # Initialize tracker (WandB)
     tracker_run = init_tracker(cfg)

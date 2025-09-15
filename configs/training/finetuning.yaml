@@ -1,13 +1,13 @@
 # Training configuration for finetuning
-max_epochs: 1
+max_epochs: 40
 batch_size: 8
-learning_rate: 2e-5
+learning_rate: 2e-4
 betas: [0.9, 0.999]
 grad_norm_clip: 1.0
 weight_decay: 0.01
 warmup_ratio: 0.1
 num_workers: 4
-lr_decay: false
+lr_decay: true
 warmup_tokens: 1000
 final_tokens: 10000
 seed: 1234

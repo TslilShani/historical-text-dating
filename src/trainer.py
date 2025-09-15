@@ -17,7 +17,9 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 import wandb
-from sklearn.metrics import roc_auc_score, average_precision_score
+
+from src.evaluator import Evaluator
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +33,19 @@ class Trainer:
         self.test_dataset = test_dataset
         self.cfg = cfg
         self.training_cfg = cfg.training
+        self.evaluator = Evaluator()
 
-        # Set random seed for reproducibility
-        if hasattr(cfg.training, "seed") and cfg.training.seed is not None:
-            torch.manual_seed(cfg.training.seed)
-            np.random.seed(cfg.training.seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(cfg.training.seed)
-                torch.cuda.manual_seed_all(cfg.training.seed)
-            logger.info(f"Random seed set to {cfg.training.seed}")
-
-        # Set device
-        self.device = "cpu"
         if torch.cuda.is_available():
-            self.device = torch.cuda.current_device()
+            self.device = torch.device("cuda")
             self.model = torch.nn.DataParallel(self.model).to(self.device)
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+            self.model = self.model.to(self.device)
+            logger.info("Using Apple Silicon MPS device for training")
+        else:
+            self.device = torch.device("cpu")
+            self.model = self.model.to(self.device)
+            logger.info("Using CPU for training")
 
         # Initialize WandB if enabled
         self.use_wandb = cfg.tracker.mode != "disabled"
@@ -267,56 +267,14 @@ class Trainer:
             all_predictions = np.concatenate(all_predictions, axis=0)
             all_labels = np.concatenate(all_labels, axis=0)
 
-            # Convert one-hot labels to binary for each class
-            # For multi-class ROC AUC, we need to use one-vs-rest approach
-            try:
-                if all_labels.shape[1] > 1:  # Multi-class case (one-hot encoded)
-                    # Calculate ROC AUC for each class (one-vs-rest)
-                    roc_auc_scores = []
-                    pr_auc_scores = []
-
-                    for class_idx in range(all_labels.shape[1]):
-                        class_labels = all_labels[:, class_idx]
-                        class_predictions = (
-                            all_predictions[:, class_idx]
-                            if all_predictions.shape[1] > 1
-                            else all_predictions.flatten()
-                        )
-
-                        # Only calculate metrics if class has both positive and negative samples
-                        if len(np.unique(class_labels)) > 1:
-                            roc_auc = roc_auc_score(class_labels, class_predictions)
-                            pr_auc = average_precision_score(
-                                class_labels, class_predictions
-                            )
-                            roc_auc_scores.append(roc_auc)
-                            pr_auc_scores.append(pr_auc)
-
-                    # Calculate macro-averaged metrics
-                    roc_auc = np.mean(roc_auc_scores) if roc_auc_scores else 0.0
-                    pr_auc = np.mean(pr_auc_scores) if pr_auc_scores else 0.0
-                else:  # Binary case
-                    roc_auc = roc_auc_score(
-                        all_labels.flatten(), all_predictions.flatten()
-                    )
-                    pr_auc = average_precision_score(
-                        all_labels.flatten(), all_predictions.flatten()
-                    )
-            except Exception as e:
-                logger.warning(f"Could not calculate AUC metrics: {e}")
-                roc_auc = 0.0
-                pr_auc = 0.0
-
             # Log epoch metrics
             avg_loss = np.mean(losses)
             if not is_train:
                 logger.info("test loss: %f", avg_loss)
-                res = {
-                    "eval/loss": avg_loss,
-                    "eval/epoch": epoch,
-                    "eval/roc_auc": roc_auc,
-                    "eval/pr_auc": pr_auc,
-                }
+                evaluation_dict = self.evaluator.end_of_epoch_eval(
+                    all_predictions, all_labels, prefix="eval"
+                )
+                res = {"eval/loss": avg_loss, "eval/epoch": epoch, **evaluation_dict}
                 # TODO - maybe remove
                 self.log_metrics(res)
 
@@ -325,11 +283,13 @@ class Trainer:
                     best_loss = avg_loss
                     # self.save_checkpoint(res)
             else:
+                evaluation_dict = self.evaluator.end_of_epoch_eval(
+                    all_predictions, all_labels, prefix="train"
+                )
                 res = {
                     "train/epoch_loss": avg_loss,
                     "train/epoch": epoch,
-                    "train/roc_auc": roc_auc,
-                    "train/pr_auc": pr_auc,
+                    **evaluation_dict,
                 }
                 self.log_metrics(res)
 

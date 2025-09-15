@@ -23,9 +23,6 @@ def main():
         dropout_rate=0.1,
         activation="relu",
         pooling_strategy="cls",
-        min_date=1000,
-        max_date=2024,
-        normalize_output=True
     )
     
     # Create the complete model

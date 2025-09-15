@@ -7,7 +7,6 @@ encoding: "utf-8"
 verbose: false
 specific_comp_range: false
 return_as_labels: false
-sample_count: 100
 
 # Data splitting
 train_ratio: 0.8
@@ -18,5 +17,3 @@ test_ratio: 0.1
 min_text_length: 50
 max_text_length: 2000
 filter_by_date_range: true
-min_date: 1000
-max_date: 2024

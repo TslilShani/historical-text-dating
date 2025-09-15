@@ -115,6 +115,9 @@ class TokenizedDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
+        """
+        Tokenizing data AND creating a one-hot encoding for the dates to train on
+        """
         sample = self.dataset[idx]
 
         text = sample["text"]
@@ -229,21 +232,21 @@ class DataLoader:
         self.max_length = cfg.data.get("max_length", 512)
         self.unique_date_ranges = []
 
-    def load_base_dataset(self) -> Dataset:
+    def load_base_dataset(self, base_path: str = None) -> Dataset:
         """Load the base dataset based on configuration"""
         logger.info(f"Loading {self.dataset_name} dataset...")
 
         # Load dataset based on configuration
         if self.dataset_name == "ben_yehuda":
-            dataset = BenYehudaDataset.load_ben_yehuda_dataset(self.cfg)
+            dataset = BenYehudaDataset.load_ben_yehuda_dataset(self.cfg, base_path)
         elif self.dataset_name == "sefaria":
-            dataset = SefariaDataset.load_sefaria_dataset(self.cfg)
+            dataset = SefariaDataset.load_sefaria_dataset(self.cfg, base_path)
         elif self.dataset_name == "all":
             sefaria_dataset: SefariaDataset = SefariaDataset.load_sefaria_dataset(
-                self.cfg
+                self.cfg, base_path
             )
             ben_yehuda_dataset: BenYehudaDataset = (
-                BenYehudaDataset.load_ben_yehuda_dataset(self.cfg)
+                BenYehudaDataset.load_ben_yehuda_dataset(self.cfg, base_path)
             )
             # A trick to unite the labels from both datasets
             self.unique_date_ranges = sorted(
@@ -286,10 +289,10 @@ class DataLoader:
 
         return train_indices, eval_indices, test_indices
 
-    def load_datasets(self) -> Tuple[Dataset, Optional[Dataset]]:
+    def load_datasets(self, base_path: str = None) -> Tuple[Dataset, Optional[Dataset]]:
         """Main method to load and prepare datasets for training"""
         # Load base dataset
-        base_dataset = self.load_base_dataset()
+        base_dataset = self.load_base_dataset(base_path)
 
         # Apply filtering
         filtered_dataset = FilteredDataset(base_dataset, self.cfg)
@@ -312,10 +315,10 @@ class DataLoader:
         return train_dataset, eval_dataset
 
     def create_tokenized_datasets(
-        self, tokenizer
+        self, tokenizer, base_path: str = None
     ) -> Tuple[TokenizedDataset, Optional[TokenizedDataset]]:
         """Create tokenized datasets with the provided tokenizer"""
-        train_dataset, eval_dataset = self.load_datasets()
+        train_dataset, eval_dataset = self.load_datasets(base_path)
 
         train_tokenized = TokenizedDataset(
             train_dataset, tokenizer, self.unique_date_ranges, self.max_length
