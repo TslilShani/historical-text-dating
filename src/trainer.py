@@ -37,15 +37,13 @@ class Trainer:
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
-            self.model = torch.nn.DataParallel(self.model).to(self.device)
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             self.device = torch.device("mps")
-            self.model = self.model.to(self.device)
             logger.info("Using Apple Silicon MPS device for training")
         else:
             self.device = torch.device("cpu")
-            self.model = self.model.to(self.device)
             logger.info("Using CPU for training")
+        self.model = self.model.to(self.device)
 
         # Initialize WandB if enabled
         self.use_wandb = cfg.tracker.mode != "disabled"
