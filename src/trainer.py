@@ -14,7 +14,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR
+from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, StepLR
 from torch.utils.data.dataloader import DataLoader
 import wandb
 
@@ -155,11 +155,23 @@ class Trainer:
             // self.cfg.training.batch_size
             * self.cfg.training.max_epochs
         )
-        if self.cfg.training.lr_decay:
-            scheduler = LinearLR(
-                optimizer, start_factor=0.1, total_iters=self.cfg.training.warmup_tokens
-            )
+        if self.cfg.training.scheduler:
+            warmup_steps = int(self.cfg.training.warmup_steps)
+            if self.cfg.training.scheduler.scheduler_type == "StepLR":
+                scheduler = StepLR(
+                    optimizer,
+                    step_size=self.cfg.training.scheduler.step_size,
+                    gamma=self.cfg.training.scheduler.gamma,
+                )
+            elif self.cfg.training.scheduler.scheduler_type == "LinearLR":
+                scheduler = LinearLR(
+                    optimizer,
+                    start_factor=self.cfg.training.scheduler.start_factor,
+                    end_factor=self.cfg.training.scheduler.end_factor,
+                    total_iters=total_steps,
+                )
         else:
+            warmup_steps = 0
             scheduler = None
 
         step = 0
@@ -213,35 +225,9 @@ class Trainer:
 
                     # Update learning rate
                     if scheduler is not None:
-                        scheduler.step()
-
-                    # decay the learning rate based on our progress
-                    if self.cfg.training.lr_decay:
-                        self.tokens += (
-                            y >= 0
-                        ).sum()  # number of tokens processed this step
-                        if self.tokens < self.cfg.training.warmup_tokens:
-                            # linear warmup
-                            lr_mult = float(self.tokens) / float(
-                                max(1, self.cfg.training.warmup_tokens)
-                            )
-                        else:
-                            # cosine learning rate decay
-                            progress = float(
-                                self.tokens - self.cfg.training.warmup_tokens
-                            ) / float(
-                                max(
-                                    1,
-                                    self.cfg.training.final_tokens
-                                    - self.cfg.training.warmup_tokens,
-                                )
-                            )
-                            lr_mult = max(
-                                0.1, 0.5 * (1.0 + math.cos(math.pi * progress))
-                            )
-                        lr = self.cfg.training.learning_rate * lr_mult
-                        for param_group in optimizer.param_groups:
-                            param_group["lr"] = lr
+                        if step >= warmup_steps:
+                            scheduler.step()
+                        lr = optimizer.param_groups[0]["lr"]
                     else:
                         lr = self.cfg.training.learning_rate
 
@@ -295,9 +281,6 @@ class Trainer:
 
             # Save checkpoint at end of each epoch
             # self.save_checkpoint(res)
-
-        # Initialize token counter for learning rate decay
-        self.tokens = 0
 
         # Training loop
         for epoch in range(self.cfg.training.max_epochs):
