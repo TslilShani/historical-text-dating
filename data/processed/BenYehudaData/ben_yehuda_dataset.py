@@ -6,6 +6,8 @@ from torch.utils.data import Dataset
 import os 
 from typing import Optional, List, Any
 from tqdm import tqdm
+import logging
+import time
 
 import sys
 from pathlib import Path
@@ -13,6 +15,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from dataset_stats import print_dataset_statistics, plot_dataset_statistics
 
+
+logger = logging.getLogger(__name__)
 
 class BenYehudaDataset(Dataset):
     def __init__(self, 
@@ -37,6 +41,8 @@ class BenYehudaDataset(Dataset):
         authors_dir = Path(authors_dir)
         pseudocatalogue_path = Path(pseudocatalogue_path)
 
+        logger.debug("Loading author files")
+        start_load_time = time.time()
         invalid_years_counter = 0
         # Load author birth/death years
         for author_file in authors_dir.glob('author_*.json'):
@@ -55,11 +61,12 @@ class BenYehudaDataset(Dataset):
                     except ValueError:
                         invalid_years_counter += 1
                         if self.verbose:
-                            print(f"Invalid year format for author `{author_name}` #{author_id}: {birth}, {death}")
+                            logger.warning(f"Invalid year format for author `{author_name}` #{author_id}: {birth}, {death}")
                         continue
                     self.author_years[author_name] = (int(birth), int(death))
         if self.verbose:
-            print(f"Could not parse birth or death years for {invalid_years_counter} authors")
+            logger.warning(f"Could not parse birth or death years for {invalid_years_counter} authors")
+        logger.debug(f"Loaded author files (tool {time.time()-start_load_time}s)")
 
         # Read pseudocatalogue.csv
         with pseudocatalogue_path.open(encoding=encoding) as f:
@@ -86,8 +93,7 @@ class BenYehudaDataset(Dataset):
                         self._unique_date_ranges.add(sample["comp_date"])
                     self.samples.append(sample)
                 else:
-                    pass
-                    # print(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
+                    logger.debug(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
 
     def __len__(self) -> int:
         return len(self.samples)

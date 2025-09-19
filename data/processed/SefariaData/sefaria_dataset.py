@@ -45,23 +45,26 @@ class SefariaDataset(Dataset):
         self.specific_comp_range = specific_comp_range
         self._unique_date_ranges = set()
         self.return_as_labels = return_as_labels
-        self.sefaria_cache_dir = sefaria_cache_dir
+        self.sefaria_cache_dir = Path(sefaria_cache_dir) if sefaria_cache_dir else None
         self.compress_level = compress_level
 
         if self.sefaria_cache_dir and self.sefaria_cache_dir.exists():
             cache_file = sefaria_cache_dir / f"{self.get_schemas_and_texts_cache_key()}.cache"
             if cache_file.exists():
                 logger.debug("Found cache file")
-                start_load_time = time.time()
+                start_cache_load_time = time.time()
                 self.samples, self.text_metadata, list_unique_date_ranges = json.loads(gzip.decompress(cache_file.read_bytes()).decode(self.encoding))
                 self._unique_date_ranges = set(list_unique_date_ranges)
-                logger.info(f"Loaded {len(self.samples)} text samples from cache {cache_file} ({time.time()-start_load_time}s)")
+                logger.info(f"Loaded {len(self.samples)} text samples from cache {cache_file} ({time.time()-start_cache_load_time}s)")
                 return
+        
+        start_load_time = time.time()
         # Load all schema files to get metadata
         self._load_schemas()
         
         # Load all merged.json files to get text content
         self._load_texts()
+        logger.info(f"Loaded {len(self.samples)} text samples from Sefaria dataset (took {time.time() - start_load_time})")
     
         if self.sefaria_cache_dir and self.sefaria_cache_dir.exists():
             logger.debug("Caching data")
@@ -70,8 +73,6 @@ class SefariaDataset(Dataset):
             data = gzip.compress(json_str, compresslevel=self.compress_level)
             cache_file.write_bytes(data)
             logger.info(f"Dumped cache (took {time.time() - start_dump_time}s)")
-
-        logger.info(f"Loaded {len(self.samples)} text samples from Sefaria dataset")
 
     def get_schemas_and_texts_cache_key(self):
         keys_from_class = str(self.sample_count) + str(self.specific_comp_range)
@@ -307,7 +308,7 @@ class SefariaDataset(Dataset):
             encoding=encoding,
             sample_count=sample_count,
             specific_comp_range=specific_comp_range,
-            sefaria_cache_dir=Path(sefaria_cache_dir),
+            sefaria_cache_dir=sefaria_cache_dir,
             compress_level=compress_level,
         )
 
