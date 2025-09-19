@@ -7,6 +7,10 @@ from typing import Optional
 import re
 import os
 from typing import List, Dict, Any
+import hashlib
+import gzip
+import logging
+import time
 
 import sys
 from pathlib import Path
@@ -15,13 +19,17 @@ sys.path.append(str(Path(__file__).parent.parent))
 from dataset_stats import print_dataset_statistics, plot_dataset_statistics
 
 
+logger = logging.getLogger(__name__)
+
 class SefariaDataset(Dataset):
     def __init__(self, 
                  sefaria_export_path: str,
                  encoding: str = 'utf-8',
                  sample_count: Optional[int]=None,
                  specific_comp_range: bool = False,
-                 return_as_labels: bool = False):
+                 return_as_labels: bool = False,
+                 sefaria_cache_dir: Path = None,
+                 compress_level: int = 1):
         """
         Initialize Sefaria dataset.
         
@@ -37,24 +45,49 @@ class SefariaDataset(Dataset):
         self.specific_comp_range = specific_comp_range
         self._unique_date_ranges = set()
         self.return_as_labels = return_as_labels
+        self.sefaria_cache_dir = sefaria_cache_dir
+        self.compress_level = compress_level
 
+        if self.sefaria_cache_dir and self.sefaria_cache_dir.exists():
+            cache_file = sefaria_cache_dir / f"{self.get_schemas_and_texts_cache_key()}.cache"
+            if cache_file.exists():
+                logger.debug("Found cache file")
+                start_load_time = time.time()
+                self.samples, self.text_metadata, list_unique_date_ranges = json.loads(gzip.decompress(cache_file.read_bytes()).decode(self.encoding))
+                self._unique_date_ranges = set(list_unique_date_ranges)
+                logger.info(f"Loaded {len(self.samples)} text samples from cache {cache_file} ({time.time()-start_load_time}s)")
+                return
         # Load all schema files to get metadata
         self._load_schemas()
         
         # Load all merged.json files to get text content
         self._load_texts()
-        
-        print(f"Loaded {len(self.samples)} text samples from Sefaria dataset")
+    
+        if self.sefaria_cache_dir and self.sefaria_cache_dir.exists():
+            logger.debug("Caching data")
+            start_dump_time = time.time()
+            json_str = json.dumps((self.samples, self.text_metadata, list(self._unique_date_ranges))).encode(self.encoding)
+            data = gzip.compress(json_str, compresslevel=self.compress_level)
+            cache_file.write_bytes(data)
+            logger.info(f"Dumped cache (took {time.time() - start_dump_time}s)")
+
+        logger.info(f"Loaded {len(self.samples)} text samples from Sefaria dataset")
+
+    def get_schemas_and_texts_cache_key(self):
+        keys_from_class = str(self.sample_count) + str(self.specific_comp_range)
+        keys_from_data = str(list(sorted((self.sefaria_path / "schemas").glob("*.json")) + sorted((self.sefaria_path / "json").rglob("**/merged.json"))))
+        return hashlib.sha256((keys_from_class + keys_from_data).encode()).hexdigest()
 
     def _load_schemas(self):
         """Load all schema files to extract metadata about texts."""
         schemas_dir = self.sefaria_path / "schemas"
         
         if not schemas_dir.exists():
-            print(f"Warning: Schemas directory not found at {schemas_dir}")
+            logger.warning(f"Warning: Schemas directory not found at {schemas_dir}")
             return
             
-        for schema_file in schemas_dir.glob("*.json"):
+        # Sorting the paths to remove randomness and diff between OS
+        for schema_file in sorted(schemas_dir.glob("*.json")):
             try:
                 with schema_file.open(encoding=self.encoding) as f:
                     schema_data = json.load(f)
@@ -71,7 +104,7 @@ class SefariaDataset(Dataset):
                     comp_date = (comp_dates[0], comp_dates[1])
                 elif len(comp_dates) > 2:
                     comp_date = None
-                    print("Weird data at file {schema_file}: {comp_dates}")
+                    logger.warning(f"Weird data at file {schema_file}: {comp_dates}")
                 else:
                     comp_date = None
                 
@@ -83,7 +116,7 @@ class SefariaDataset(Dataset):
                 }
                 
             except Exception as e:
-                print(f"Error loading schema {schema_file}: {e}")
+                logger.error(f"Error loading schema {schema_file}: {e}")
                 continue
 
     def _load_texts(self):
@@ -91,11 +124,12 @@ class SefariaDataset(Dataset):
         json_dir = self.sefaria_path / "json"
         
         if not json_dir.exists():
-            print(f"Warning: JSON directory not found at {json_dir}")
+            logger.warning(f"Warning: JSON directory not found at {json_dir}")
             return
             
         # Recursively find all merged.json files
-        merged_files = list(json_dir.rglob("**/merged.json"))
+        # Sorting the paths to remove randomness and diff between OS
+        merged_files = list(sorted(json_dir.rglob("**/merged.json")))
         if self.sample_count:
             merged_files = merged_files[:self.sample_count]
         
@@ -144,7 +178,7 @@ class SefariaDataset(Dataset):
                 self.samples.append(sample)
                 
             except Exception as e:
-                print(f"Error loading merged file {merged_file}: {e}")
+                logger.error(f"Error loading merged file {merged_file}: {e}")
                 continue
 
     def _extract_paragraphs(self, text_content, paragraphs, current_path=""):
@@ -173,7 +207,7 @@ class SefariaDataset(Dataset):
     def _clean_text(self, text):
         """Clean and normalize text content."""
         if not isinstance(text, str):
-            print("Should not be here")
+            logger.warning("Text of type not string found - Should not be here")
             return ""
 
         # Warning - trying to remove html tag by regex even though not possible 
@@ -259,18 +293,22 @@ class SefariaDataset(Dataset):
             raw_data_path = base_path + raw_data_path
         # Get paths from config with fallbacks
         sefaria_export_path = cfg.data.get("sefaria_export_path", raw_data_path + "Sefaria-Export-master")
+        sefaria_cache_dir = cfg.data.get("sefaria_cache_dir", None) # Can be "cache/"
         
         # Get other parameters
         encoding = cfg.data.get("encoding", "utf-8")
         verbose = cfg.data.get("verbose", True)
         sample_count = cfg.data.get("sample_count", None)
         specific_comp_range = cfg.data.get("specific_comp_range", False)
+        compress_level = cfg.data.get("compress_level", 1)
         
         return cls(
             sefaria_export_path=sefaria_export_path,
             encoding=encoding,
             sample_count=sample_count,
-            specific_comp_range=specific_comp_range
+            specific_comp_range=specific_comp_range,
+            sefaria_cache_dir=Path(sefaria_cache_dir),
+            compress_level=compress_level,
         )
 
 if __name__ == "__main__":
