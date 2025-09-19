@@ -181,7 +181,7 @@ class HistoricalTextDatingModel(nn.Module):
     """
 
     def __init__(
-        self, encoder: nn.Module, head_config: DictConfig, freeze_encoder: bool = False
+        self, encoder: nn.Module, head_config: DictConfig, freeze_encoder: bool = True
     ):
         """
         Initialize the complete historical text dating model.

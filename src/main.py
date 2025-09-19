@@ -45,7 +45,7 @@ def main(cfg: DictConfig):
     model = HistoricalTextDatingModel(
         encoder=encoder,
         head_config=model_head_config,
-        freeze_encoder=True,  # Freeze encoder to not change bert
+        freeze_encoder=cfg.model.freeze_encoder,  # Freeze encoder to not change bert
     )
 
     # Create trainer from config
