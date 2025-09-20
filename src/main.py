@@ -9,7 +9,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.utils import init_tracker, DataLoader
+from src.utils import init_tracker, DataLoadAndFilter
 from src.trainer import Trainer
 from src.model_head import HistoricalTextDatingModel, create_model_head_config
 from src.utils.set_seed import set_seed
@@ -37,7 +37,7 @@ def main(cfg: DictConfig):
 
     # Load datasets using the data loader
     logger.info("Loading datasets...")
-    data_loader = DataLoader(cfg)
+    data_loader = DataLoadAndFilter(cfg)
     train_dataset, eval_dataset = data_loader.create_tokenized_datasets(tokenizer)
 
     model_head_config["num_classes"] = len(train_dataset[0][1])

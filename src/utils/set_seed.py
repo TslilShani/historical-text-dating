@@ -1,4 +1,5 @@
 import torch
+import random
 import numpy as np
 import logging
 
@@ -10,6 +11,7 @@ def set_seed(cfg):
     if hasattr(cfg.training, "seed") and cfg.training.seed is not None:
         torch.manual_seed(cfg.training.seed)
         np.random.seed(cfg.training.seed)
+        random.seed(cfg.training.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed(cfg.training.seed)
             torch.cuda.manual_seed_all(cfg.training.seed)

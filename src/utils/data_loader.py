@@ -9,6 +9,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from torch.utils.data import ConcatDataset, Dataset
 from omegaconf import DictConfig
 import torch
+import random
+from collections import defaultdict
 
 from data.processed.BenYehudaData.ben_yehuda_dataset import BenYehudaDataset
 from data.processed.SefariaData.sefaria_dataset import SefariaDataset
@@ -39,11 +41,16 @@ class FilteredDataset(Dataset):
 
         valid_indices = []
 
+        fall_rate_dict = defaultdict(int)
         for idx in range(len(self.base_dataset)):
             sample = self.base_dataset[idx]
 
             # Check if sample has required fields
-            if not sample.get("text") or not sample.get("comp_date"):
+            if not sample.get("text"):
+                fall_rate_dict["No text in sample"] += 1
+                continue
+            if not sample.get("comp_date"):
+                fall_rate_dict["No date in sample"] += 1
                 continue
 
             text = sample["text"]
@@ -56,19 +63,30 @@ class FilteredDataset(Dataset):
                 date_value = date
 
             # Filter by text length
-            if len(text) < min_text_length or len(text) > max_text_length:
+            if len(text) < min_text_length:
+                fall_rate_dict["Text too short"] += 1
+                continue
+            if len(text) > max_text_length:
+                fall_rate_dict["Text too long"] += 1
                 continue
 
             # Filter by date range
-            if filter_by_date_range and (
-                date_value < min_date or date_value > max_date
-            ):
-                continue
+            if filter_by_date_range:
+                if date_value < min_date:
+                    fall_rate_dict["Text date too old (<{min_date})"] += 1
+                    continue
+                if date_value > max_date:
+                    fall_rate_dict[f"Text date too recent (>{max_date})"] += 1
+                    continue
 
             valid_indices.append(idx)
 
         logger.info(
             f"Filtered dataset: {len(self.base_dataset)} -> {len(valid_indices)} samples"
+        )
+        logger.info(
+            "Filter reasons: "
+            + "\n".join(f"{key}: {value}" for key, value in fall_rate_dict.items())
         )
         return valid_indices
 
@@ -223,7 +241,7 @@ class SampleDataset(Dataset):
         return self.samples[idx]
 
 
-class DataLoader:
+class DataLoadAndFilter:
     """Main data loading class that handles different dataset types"""
 
     def __init__(self, cfg: DictConfig):
@@ -278,6 +296,8 @@ class DataLoader:
 
         # Create indices
         indices = list(range(total_size))
+        if self.cfg.data.get("shuffle", True):
+            random.shuffle(indices)
 
         train_indices = indices[:train_size]
         eval_indices = indices[train_size : train_size + eval_size]

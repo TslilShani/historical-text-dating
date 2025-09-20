@@ -184,6 +184,7 @@ class Trainer:
                 data,
                 batch_size=self.cfg.training.batch_size,
                 num_workers=self.cfg.training.num_workers,
+                shuffle=self.cfg.data.get("shuffle", True),
             )
 
             losses = []
