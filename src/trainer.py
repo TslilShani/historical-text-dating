@@ -6,19 +6,20 @@ Enhanced training loop with WandB and Hydra integration
 import os
 import math
 import logging
-from typing import Optional, Dict, Any
-from omegaconf import DictConfig
-from hydra.core.hydra_config import HydraConfig
-
 from tqdm import tqdm
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+import wandb
 import numpy as np
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, StepLR
 from torch.utils.data.dataloader import DataLoader
-import wandb
+from omegaconf import DictConfig
+from hydra.core.hydra_config import HydraConfig
 
-from src.evaluator import Evaluator
+from src.utils.evaluator import Evaluator
 
 
 logger = logging.getLogger(__name__)
@@ -63,16 +64,16 @@ class Trainer:
     #         if self.use_wandb and wandb.run is not None:
     #             wandb.save(self.cfg.training.ckpt_path)
 
-    def save_checkpoint(self, results_dict):
+    @staticmethod
+    def save_checkpoint(cfg, model, results_dict, tags=None):
         """Save model checkpoint"""
-        if (
-            hasattr(self.cfg.training, "ckpt_path")
-            and self.cfg.training.ckpt_path is not None
-        ):
-            model_file_name = self.model.get_model_file_name()
-            model_path = os.path.join(self.cfg.training.ckpt_path, model_file_name)
+        if hasattr(cfg.training, "ckpt_path") and cfg.training.ckpt_path is not None:
+            model_file_name = model.get_model_file_name()
+            model_dir = Path(cfg.training.ckpt_path)
+            model_dir.mkdir(parents=True)
+            model_path = model_dir / model_file_name
             # Save locally
-            torch.save(self.model.state_dict(), model_path)
+            torch.save(model.state_dict(), str(model_path))
             logger.info(f"Model state saved to {model_path}")
 
             # Prepare artifact for wandb
@@ -86,7 +87,7 @@ class Trainer:
             artifact = wandb.Artifact(
                 name=art_name,
                 type="model",
-                description=f"Trained {model_file_name} model with seed {self.cfg.training.seed}",
+                description=f"Trained {model_file_name} model with seed {cfg.training.seed}",
                 metadata=artifact_metadata,
             )
 
@@ -96,12 +97,6 @@ class Trainer:
 
             artifact.add_file(model_path, name=model_file_name)
 
-            # tags
-            tags = [
-                str(self.train_dataset.get_dataset_name()),
-                "seed-" + str(self.cfg.training.seed),
-            ]
-
             # Include the files under .hydra in the artifact
             # hydra_run_dir = HydraConfig.get().runtime.output_dir
             # results_file_name = "results" + model_file_name
@@ -110,6 +105,12 @@ class Trainer:
 
             # Save the artifact to wandb
             wandb.log_artifact(artifact, tags=tags)
+
+    def get_tags(self):
+        return [
+            str(self.train_dataset.get_dataset_name()),
+            "seed-" + str(self.cfg.training.seed),
+        ]
 
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None):
         """Log metrics to WandB"""
@@ -266,7 +267,7 @@ class Trainer:
                 # Track best model
                 if avg_loss < best_loss:
                     best_loss = avg_loss
-                    # self.save_checkpoint(res)
+                    # self.save_checkpoint(cfg, self.model, res)
             else:
                 evaluation_dict = self.evaluator.end_of_epoch_eval(
                     all_predictions, all_labels, prefix="train"
@@ -279,7 +280,7 @@ class Trainer:
                 self.log_metrics(res)
 
             # Save checkpoint at end of each epoch
-            # self.save_checkpoint(res)
+            # self.save_checkpoint(cfg, self.model, res)
 
         # Training loop
         for epoch in range(self.cfg.training.max_epochs):
@@ -288,7 +289,8 @@ class Trainer:
             run_epoch("train")
             if self.test_dataset is not None:
                 run_epoch("test")
-        self.save_checkpoint({})
+
+        self.save_checkpoint(cfg, self.model, {}, self.get_tags())
 
         # Log final metrics
         if self.use_wandb and wandb.run is not None:

@@ -14,4 +14,4 @@ scheduler:
   start_factor: 1.0
   end_factor: 0.01
 seed: 1234
-ckpt_path: ./outputs/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
+ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
