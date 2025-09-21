@@ -165,7 +165,7 @@ class DatePredictionHead(nn.Module):
 
         # Squeeze if single output
         if self.num_classes == 1:
-            predicted_dates = predicted_dates.squeeze(-1)
+            predicted_dates = logits.squeeze(-1)
         else:
             # Apply softmax activation to normalize output
             predicted_dates = torch.softmax(logits, dim=-1)

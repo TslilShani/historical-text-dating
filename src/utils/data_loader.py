@@ -287,8 +287,9 @@ class DataLoadAndFilter:
         self, dataset: Dataset
     ) -> Tuple[List[int], List[int], List[int]]:
         """Split dataset indices into train/eval/test splits"""
-        train_ratio = self.cfg.data.get("train_ratio", 0.8)
-        eval_ratio = self.cfg.data.get("eval_ratio", 0.1)
+        # Get split ratios from config, but don't fall back so we know that everything is coming from config
+        train_ratio = self.cfg.data.train_ratio
+        eval_ratio = self.cfg.data.eval_ratio
 
         total_size = len(dataset)
         train_size = int(train_ratio * total_size)
