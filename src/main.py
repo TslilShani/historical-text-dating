@@ -1,5 +1,5 @@
 from omegaconf import DictConfig, OmegaConf
-from constants import CONFIG_DIR
+from src.constants import CONFIG_DIR
 import hydra
 import wandb
 import logging
@@ -21,9 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def train_head(cfg: DictConfig, encoder):
+    # Load the model and tokenizer
     logger.info("Loading the tokenizer...")
-    tokenizer = instantiate(cfg.model.tokenizer)
 
+    tokenizer = instantiate(cfg.model.tokenizer)
     # Load datasets using the data loader
     logger.info("Loading datasets...")
     data_loader = DataLoadAndFilter(cfg)
@@ -97,7 +98,6 @@ def main(cfg: DictConfig):
     # DEBUG to check configs are loaded properly
     logger.debug("Configurations: %s", OmegaConf.to_yaml(cfg))
 
-    # Load the model
     logger.info("Loading the model...")
     encoder = instantiate(cfg.model.encoder)
 
