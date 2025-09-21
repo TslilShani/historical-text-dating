@@ -18,7 +18,11 @@ from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, Step
 from torch.utils.data.dataloader import DataLoader
 from omegaconf import DictConfig
 from hydra.core.hydra_config import HydraConfig
+<<<<<<< HEAD
 from .consts import DatasetSplitName
+=======
+from .types import DatasetSplitName
+>>>>>>> 01076df (chore: base work for in preparation for grid + finding best hyperparams)
 
 from src.utils.evaluator import Evaluator
 
