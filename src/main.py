@@ -1,4 +1,5 @@
 from omegaconf import DictConfig, OmegaConf
+from src.constants import CONFIG_DIR
 import hydra
 import wandb
 import logging
