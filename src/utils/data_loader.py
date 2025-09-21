@@ -73,7 +73,7 @@ class FilteredDataset(Dataset):
             # Filter by date range
             if filter_by_date_range:
                 if date_value < min_date:
-                    fall_rate_dict["Text date too old (<{min_date})"] += 1
+                    fall_rate_dict[f"Text date too old (<{min_date})"] += 1
                     continue
                 if date_value > max_date:
                     fall_rate_dict[f"Text date too recent (>{max_date})"] += 1

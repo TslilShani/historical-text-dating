@@ -66,7 +66,7 @@ class BenYehudaDataset(Dataset):
                     self.author_years[author_name] = (int(birth), int(death))
         if self.verbose:
             logger.warning(f"Could not parse birth or death years for {invalid_years_counter} authors")
-        logger.debug(f"Loaded author files (tool {time.time()-start_load_time}s)")
+        logger.info(f"Loaded author files - {len(self.author_years)} authors (took {time.time()-start_load_time}s)")
 
         # Read pseudocatalogue.csv
         with pseudocatalogue_path.open(encoding=encoding) as f:
@@ -94,6 +94,7 @@ class BenYehudaDataset(Dataset):
                     self.samples.append(sample)
                 else:
                     logger.debug(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
+        logger.info(f"Loaded {len(self.samples)} text samples from Ben Yehuda dataset")
 
     def __len__(self) -> int:
         return len(self.samples)
