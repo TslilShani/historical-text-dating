@@ -66,7 +66,7 @@ class Trainer:
         if hasattr(cfg.training, "ckpt_path") and cfg.training.ckpt_path is not None:
             model_file_name = model.get_model_file_name()
             model_dir = Path(cfg.training.ckpt_path)
-            model_dir.mkdir(parents=True)
+            model_dir.mkdir(parents=True, exist_ok=True)
             model_path = model_dir / model_file_name
             # Save locally
             torch.save(model.state_dict(), str(model_path))
