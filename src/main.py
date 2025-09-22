@@ -104,9 +104,13 @@ def main(cfg: DictConfig):
     if cfg.training.objective == "head-training":
         train_head(cfg, encoder)
     elif cfg.training.objective == "noise-adding":
+<<<<<<< HEAD
         noised_encoder(cfg, encoder)
     elif cfg.training.objective == "anti-training":
         anti_train_encoder(cfg, encoder)
+=======
+        forget_encoder(cfg, encoder)
+>>>>>>> 6f1be33 (Moved some stuff, renamed some other)
     else:
         logger.error(f"Incorrect training objective: {cfg.training.objective}")
 
