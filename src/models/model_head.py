@@ -351,6 +351,7 @@ def create_model_head_config(
     dropout_rate: float = 0.1,
     activation: str = "relu",
     pooling_strategy: str = "cls",
+    **kwargs,
 ) -> DictConfig:
     """
     Create a configuration dictionary for the model head.

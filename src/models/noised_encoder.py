@@ -8,14 +8,14 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-class NoiseForgetEncoder(nn.Module):
+class NoisedEncoder(nn.Module):
     def __init__(
         self,
         cfg: DictConfig,
         encoder: nn.Module,
     ):
         """
-        Initialize the NoiseForgetEncoder with an encoder and noise configuration.
+        Initialize the NoisedEncoder with an encoder and noise configuration.
 
         Args:
             cfg: Configuration dictionary

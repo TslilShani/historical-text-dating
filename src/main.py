@@ -1,6 +1,7 @@
 from omegaconf import DictConfig, OmegaConf
 from constants import CONFIG_DIR
 import hydra
+import wandb
 import logging
 from hydra.utils import instantiate
 
@@ -11,9 +12,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.utils import init_tracker, DataLoadAndFilter
 from src.trainer import Trainer
-from src.model_head import HistoricalTextDatingModel, create_model_head_config
+from src.models.model_head import HistoricalTextDatingModel, create_model_head_config
 from src.utils.set_seed import set_seed
-from src.forgettor import NoiseForgetEncoder
+from src.models.noised_encoder import NoisedEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def train_head(cfg: DictConfig, encoder):
 
 def forget_encoder(cfg: DictConfig, encoder):
     logger.info("Adding noise to encoder")
-    noised_encoder = NoiseForgetEncoder(cfg, encoder)
+    noised_encoder = NoisedEncoder(cfg, encoder)
     logger.info("Saving noised encoder to file")
     tags = ["seed-" + str(cfg.training.seed)]
     Trainer.save_checkpoint(cfg, noised_encoder, {}, tags)
@@ -63,6 +64,11 @@ def main(cfg: DictConfig):
 
     # Initialize tracker (WandB)
     tracker_run = init_tracker(cfg)
+    # Initialize WandB if enabled
+    use_wandb = cfg.tracker.mode != "disabled"
+    if use_wandb and wandb.run is None:
+        wandb.init(project=cfg.tracker.project, name=cfg.tracker.name, config=cfg)
+        logger.info("WandB initialized")
 
     # DEBUG to check configs are loaded properly
     logger.debug("Configurations: %s", OmegaConf.to_yaml(cfg))
@@ -73,11 +79,13 @@ def main(cfg: DictConfig):
 
     if cfg.training.objective == "head-training":
         train_head(cfg, encoder)
-    elif cfg.training.objective == "forgetting":
+    elif cfg.training.objective == "noise-adding":
         forget_encoder(cfg, encoder)
     else:
         logger.error(f"Incorrect training objective: {cfg.training.objective}")
 
+    if use_wandb and wandb.run is not None:
+        wandb.finish()
     # Finish the tracker run
     tracker_run.finish()
 

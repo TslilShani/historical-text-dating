@@ -46,11 +46,7 @@ class Trainer:
             logger.info("Using CPU for training")
         self.model = self.model.to(self.device)
 
-        # Initialize WandB if enabled
         self.use_wandb = cfg.tracker.mode != "disabled"
-        if self.use_wandb and wandb.run is None:
-            wandb.init(project=cfg.tracker.project, name=cfg.tracker.name, config=cfg)
-            logger.info("WandB initialized for training")
 
     # # TODO: make it better with wandb artifacts
     # def save_checkpoint(self):

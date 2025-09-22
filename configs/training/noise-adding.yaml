@@ -1,5 +1,5 @@
 # Training configuration for forgetting data from encoder
-objective: "forgetting"
+objective: "noise-adding"
 
 seed: 1234
 ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
