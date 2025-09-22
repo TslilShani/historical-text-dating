@@ -290,7 +290,7 @@ class Trainer:
             if self.test_dataset is not None:
                 run_epoch("test")
 
-        self.save_checkpoint(cfg, self.model, {}, self.get_tags())
+        self.save_checkpoint(self.cfg, self.model, {}, self.get_tags())
 
         # Log final metrics
         if self.use_wandb and wandb.run is not None:
