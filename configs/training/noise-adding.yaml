@@ -8,3 +8,4 @@ ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
 noise:
   noise_std: 0.01
   noise_type: "gaussian"  # or "uniform"
+upload_model: false

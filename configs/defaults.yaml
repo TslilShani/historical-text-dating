@@ -8,7 +8,7 @@ defaults:
 
 hydra:
   run:
-    dir: ./outputs/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ./outputs/${training.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
   job_logging:
     root:
