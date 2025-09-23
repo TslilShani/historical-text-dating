@@ -2,7 +2,7 @@ defaults:
   - paths
   - model: multilingual_bert_for_mlm
   - tracker: wandb
-  - training: noise-adding
+  - training: anti-training
   - data: historical_text_sample
   - _self_
 
