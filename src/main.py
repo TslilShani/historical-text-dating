@@ -1,5 +1,4 @@
 from omegaconf import DictConfig, OmegaConf
-from src.constants import CONFIG_DIR
 import hydra
 import wandb
 import logging
@@ -10,6 +9,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.constants import CONFIG_DIR
 from src.utils import init_tracker, DataLoadAndFilter, MLMDataset
 from src.trainer import Trainer
 from src.models.anti_encoder import AntiEncoder

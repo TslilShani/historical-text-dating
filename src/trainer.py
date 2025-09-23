@@ -18,7 +18,7 @@ from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, Step
 from torch.utils.data.dataloader import DataLoader
 from omegaconf import DictConfig
 from hydra.core.hydra_config import HydraConfig
-from .types import DatasetSplitName
+from .consts import DatasetSplitName
 
 from src.utils.evaluator import Evaluator
 
