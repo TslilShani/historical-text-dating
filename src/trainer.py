@@ -206,8 +206,9 @@ class Trainer:
                     )  # collapse all losses if they are scattered on multiple gpus
                     losses.append(loss.item())
 
-                # Collect predictions and labels for metrics calculation
-                all_predictions.append(logits.detach().cpu().numpy())
+                # Apply softmax to logits for probabilities
+                probs = torch.softmax(logits, dim=-1)
+                all_predictions.append(probs.detach().cpu().numpy())
                 all_labels.append(y.detach().cpu().numpy())
 
                 if is_train:
