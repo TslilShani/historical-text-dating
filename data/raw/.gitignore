@@ -4,3 +4,5 @@ SefariaData/Sefaria-Export-master/json/*
 SefariaData/Sefaria-Export-master/schemas/*
 BenYehudaData/public_domain_dump-2025-03/*
 BenYehudaData/scraper/benyehuda_data/*
+RoyalSocietyData/Royal_Society_Corpus_open_v6.0_texts_txt/*
+RoyalSocietyData/Royal_Society_Corpus_open_v6.0_meta.tsv/
