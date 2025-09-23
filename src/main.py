@@ -10,8 +10,9 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.utils import init_tracker, DataLoadAndFilter
+from src.utils import init_tracker, DataLoadAndFilter, MLMDataset
 from src.trainer import Trainer
+from src.models.anti_encoder import AntiEncoder
 from src.models.model_head import HistoricalTextDatingModel, create_model_head_config
 from src.utils.set_seed import set_seed
 from src.models.noised_encoder import NoisedEncoder
@@ -48,7 +49,7 @@ def train_head(cfg: DictConfig, encoder):
     logger.info("Training completed successfully!")
 
 
-def forget_encoder(cfg: DictConfig, encoder):
+def noised_encoder(cfg: DictConfig, encoder):
     logger.info("Adding noise to encoder")
     noised_encoder = NoisedEncoder(cfg, encoder)
     logger.info("Saving noised encoder to file")
@@ -56,6 +57,29 @@ def forget_encoder(cfg: DictConfig, encoder):
     Trainer.save_checkpoint(cfg, noised_encoder, {}, tags)
 
     logger.info("Adding noise completed successfully!")
+
+
+def anti_train_encoder(cfg: DictConfig, mlm_model):
+    logger.info("Loading the tokenizer...")
+    tokenizer = instantiate(cfg.model.tokenizer)
+
+    # Load datasets using the data loader
+    logger.info("Loading datasets...")
+    data_loader = DataLoadAndFilter(cfg)
+    train_dataset, eval_dataset = data_loader.load_datasets()
+    mlm_train_dataset = MLMDataset(train_dataset, tokenizer, max_length=128)
+    mlm_eval_dataset = MLMDataset(eval_dataset, tokenizer, max_length=128)
+
+    # Create trainer from config
+    logger.info("Creating trainer...")
+    anti_encoder = AntiEncoder(cfg, mlm_model)
+    trainer = Trainer(anti_encoder, mlm_train_dataset, mlm_eval_dataset, cfg)
+
+    # Start training
+    logger.info("Starting anti-training...")
+    trainer.train()
+
+    logger.info("Anti-training completed successfully!")
 
 
 @hydra.main(version_base=None, config_path=CONFIG_DIR, config_name="defaults")
@@ -80,7 +104,9 @@ def main(cfg: DictConfig):
     if cfg.training.objective == "head-training":
         train_head(cfg, encoder)
     elif cfg.training.objective == "noise-adding":
-        forget_encoder(cfg, encoder)
+        noised_encoder(cfg, encoder)
+    elif cfg.training.objective == "anti-training":
+        anti_train_encoder(cfg, encoder)
     else:
         logger.error(f"Incorrect training objective: {cfg.training.objective}")
 

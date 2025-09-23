@@ -352,3 +352,52 @@ class DataLoadAndFilter:
         )
 
         return train_tokenized, eval_tokenized
+
+
+class MLMDataset(Dataset):
+    """
+    Dataset for Masked Language Modeling (MLM) finetuning.
+    Returns tokenized input with random masking applied.
+    """
+
+    def __init__(self, dataset, tokenizer, max_length=128, mlm_probability=0.15):
+        self.dataset = dataset
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.mlm_probability = mlm_probability
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        sample = self.dataset[idx]
+        text = sample["text"]
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_length,
+        )
+        input_ids = inputs["input_ids"].squeeze(0)
+        attention_mask = inputs["attention_mask"].squeeze(0)
+
+        # Create MLM labels
+        labels = input_ids.clone()
+        probability_matrix = torch.full(labels.shape, self.mlm_probability)
+        special_tokens_mask = self.tokenizer.get_special_tokens_mask(
+            labels.tolist(), already_has_special_tokens=True
+        )
+        probability_matrix = torch.tensor(special_tokens_mask) == 0
+        masked_indices = torch.bernoulli(probability_matrix.float()).bool()
+        labels[~masked_indices] = -100  # Only compute loss on masked tokens
+
+        # Replace masked input tokens with [MASK]
+        mask_token_id = self.tokenizer.mask_token_id
+        input_ids[masked_indices] = mask_token_id
+
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+        }

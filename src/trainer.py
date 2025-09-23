@@ -193,26 +193,31 @@ class Trainer:
                 else enumerate(loader)
             )
 
-            for it, (x, y) in pbar:
-                # place data on the correct device
-                x = x.to(self.device)
-                y = y.to(self.device)
+            for it, batch in pbar:
+                # Detect MLM batch by dict keys
 
-                # forward the model
-                with torch.set_grad_enabled(is_train):
-                    logits, loss = model(x, labels=y)
-                    loss = (
-                        loss.mean()
-                    )  # collapse all losses if they are scattered on multiple gpus
-                    losses.append(loss.item())
-
-                # Apply softmax to logits for probabilities
-                probs = torch.softmax(logits, dim=-1)
-                all_predictions.append(probs.detach().cpu().numpy())
-                all_labels.append(y.detach().cpu().numpy())
+                if self.cfg.training.is_mlm:
+                    input_ids = batch["input_ids"].to(self.device)
+                    attention_mask = batch["attention_mask"].to(self.device)
+                    labels = batch["labels"].to(self.device)
+                else:
+                    # Classification batch: (x, y)
+                    input_ids = batch[0].to(self.device)
+                    attention_mask = None
+                    labels = batch[1].to(self.device)
+                logits, loss = model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    labels=labels,
+                )
+                loss = loss.mean()
+                losses.append(loss.item())
+                if not self.cfg.training.is_mlm:
+                    probs = torch.softmax(logits, dim=-1)
+                    all_predictions.append(probs.detach().cpu().numpy())
+                    all_labels.append(labels.detach().cpu().numpy())
 
                 if is_train:
-                    # backprop and update the parameters
                     model.zero_grad()
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(
@@ -220,7 +225,6 @@ class Trainer:
                     )
                     optimizer.step()
 
-                    # Update learning rate
                     if scheduler is not None:
                         if step >= warmup_steps:
                             scheduler.step()
@@ -228,13 +232,11 @@ class Trainer:
                     else:
                         lr = self.cfg.training.learning_rate
 
-                    # report progress
                     pbar.set_description(
                         f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e}"
                     )
 
-                    # Log to WandB
-                    if step % 10 == 0:  # Log every 10 steps
+                    if step % 10 == 0:
                         self.log_metrics(
                             {
                                 "train/loss": loss.item(),
@@ -247,37 +249,44 @@ class Trainer:
                 step += 1
 
             # Calculate metrics
-            all_predictions = np.concatenate(all_predictions, axis=0)
-            all_labels = np.concatenate(all_labels, axis=0)
+            if not self.cfg.training.is_mlm:
+                all_predictions = np.concatenate(all_predictions, axis=0)
+                all_labels = np.concatenate(all_labels, axis=0)
 
             # Log epoch metrics
             avg_loss = np.mean(losses)
             if not is_train:
                 logger.info("test loss: %f", avg_loss)
-                evaluation_dict = self.evaluator.end_of_epoch_eval(
-                    all_predictions, all_labels, prefix="eval"
-                )
-                res = {"eval/loss": avg_loss, "eval/epoch": epoch, **evaluation_dict}
-                # TODO - maybe remove
-                self.log_metrics(res)
-
-                # Track best model
+                # Only run evaluator for classification
+                if not self.cfg.training.is_mlm:
+                    evaluation_dict = self.evaluator.end_of_epoch_eval(
+                        all_predictions, all_labels, prefix="eval"
+                    )
+                    res = {
+                        "eval/loss": avg_loss,
+                        "eval/epoch": epoch,
+                        **evaluation_dict,
+                    }
+                else:
+                    res = {"eval/loss": avg_loss, "eval/epoch": epoch}
                 if avg_loss < best_loss:
                     best_loss = avg_loss
-                    # self.save_checkpoint(cfg, self.model, res)
             else:
-                evaluation_dict = self.evaluator.end_of_epoch_eval(
-                    all_predictions, all_labels, prefix="train"
-                )
-                res = {
-                    "train/epoch_loss": avg_loss,
-                    "train/epoch": epoch,
-                    **evaluation_dict,
-                }
-                self.log_metrics(res)
-
-            # Save checkpoint at end of each epoch
-            # self.save_checkpoint(cfg, self.model, res)
+                if not self.cfg.training.is_mlm:
+                    evaluation_dict = self.evaluator.end_of_epoch_eval(
+                        all_predictions, all_labels, prefix="train"
+                    )
+                    res = {
+                        "train/epoch_loss": avg_loss,
+                        "train/epoch": epoch,
+                        **evaluation_dict,
+                    }
+                else:
+                    res = {
+                        "train/epoch_loss": avg_loss,
+                        "train/epoch": epoch,
+                    }
+            self.log_metrics(res)
 
         # Training loop
         for epoch in range(self.cfg.training.max_epochs):

@@ -41,18 +41,17 @@ class AntiEncoder(nn.Module):
         Than swaps it!
 
         Args:
-            logits: Model logits (batch_size,)
-            labels: Ground truth dates (batch_size,)
+            logits: Model logits (batch_size, seq_len, vocab_size)
+            labels: Ground truth token indices (batch_size, seq_len)
 
         Returns:
             Computed loss tensor
         """
-        # Use Mean Squared Error loss for regression
-        loss_fn = nn.CrossEntropyLoss()
-        # =================================================
-        # The loss is negated to make it - "anti learning"
-        # =================================================
-        return -loss_fn(logits, labels.float())
+        loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
+        # Reshape for MLM: [batch_size * seq_len, vocab_size], [batch_size * seq_len]
+        loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+        # Negate for anti-learning
+        return -loss
 
     def get_model_file_name(self):
         """
