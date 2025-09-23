@@ -206,13 +206,15 @@ class Trainer:
                     input_ids = batch[0].to(self.device)
                     attention_mask = None
                     labels = batch[1].to(self.device)
-                logits, loss = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    labels=labels,
-                )
-                loss = loss.mean()
-                losses.append(loss.item())
+                
+                with torch.set_grad_enabled(is_train):
+                    logits, loss = model(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        labels=labels,
+                    )
+                    loss = loss.mean()
+                    losses.append(loss.item())
                 if not self.cfg.training.is_mlm:
                     probs = torch.softmax(logits, dim=-1)
                     all_predictions.append(probs.detach().cpu().numpy())
