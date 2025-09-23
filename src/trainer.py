@@ -18,6 +18,7 @@ from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, Step
 from torch.utils.data.dataloader import DataLoader
 from omegaconf import DictConfig
 from hydra.core.hydra_config import HydraConfig
+from .types import DatasetSplitName
 
 from src.utils.evaluator import Evaluator
 
@@ -28,10 +29,10 @@ logger = logging.getLogger(__name__)
 class Trainer:
     """Enhanced trainer with WandB and Hydra integration"""
 
-    def __init__(self, model, train_dataset, test_dataset, cfg: DictConfig):
+    def __init__(self, model, train_dataset, eval_dataset, cfg: DictConfig):
         self.model = model
         self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        self.eval_dataset = eval_dataset
         self.cfg = cfg
         self.training_cfg = cfg.training
         self.evaluator = Evaluator()
@@ -178,9 +179,9 @@ class Trainer:
 
         def run_epoch(split):
             nonlocal step, best_loss
-            is_train = split == "train"
+            is_train = split == DatasetSplitName.TRAIN
             model.train(is_train)
-            data = self.train_dataset if is_train else self.test_dataset
+            data = self.train_dataset if is_train else self.eval_dataset
             loader = DataLoader(
                 data,
                 batch_size=self.cfg.training.batch_size,
@@ -256,9 +257,9 @@ class Trainer:
             # Log epoch metrics
             avg_loss = np.mean(losses)
             if not is_train:
-                logger.info("test loss: %f", avg_loss)
+                logger.info("%s loss: %f", split, avg_loss)
                 evaluation_dict = self.evaluator.end_of_epoch_eval(
-                    all_predictions, all_labels, prefix="eval"
+                    all_predictions, all_labels, prefix=split
                 )
                 res = {"eval/loss": avg_loss, "eval/epoch": epoch, **evaluation_dict}
                 # TODO - maybe remove
@@ -270,7 +271,7 @@ class Trainer:
                     # self.save_checkpoint(cfg, self.model, res)
             else:
                 evaluation_dict = self.evaluator.end_of_epoch_eval(
-                    all_predictions, all_labels, prefix="train"
+                    all_predictions, all_labels, prefix=split
                 )
                 res = {
                     "train/epoch_loss": avg_loss,
@@ -286,9 +287,9 @@ class Trainer:
         for epoch in range(self.cfg.training.max_epochs):
             logger.info(f"Starting epoch {epoch + 1}/{self.cfg.training.max_epochs}")
 
-            run_epoch("train")
-            if self.test_dataset is not None:
-                run_epoch("test")
+            run_epoch(DatasetSplitName.TRAIN)
+            if self.eval_dataset is not None:
+                run_epoch(DatasetSplitName.VALIDATION)
 
         self.save_checkpoint(self.cfg, self.model, {}, self.get_tags())
 

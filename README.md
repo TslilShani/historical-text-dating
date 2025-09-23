@@ -14,18 +14,18 @@ If there's a permanent change you want to make, change the config files in the `
 
 To run the project on mac (windows requires other path), use the following command:
 ```bash
-PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py
+python -m src.main
 ```
 
 If you wish to override default configs, override according to the config file structure. For example, this will override the logging level
 to `DEBUG`:
 
 ```bash
-PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py hydra.job_logging.root.level=DEBUG
+python -m src.main hydra.job_logging.root.level=DEBUG
 ```
 There's also an option to add configurations on the fly using `+`
 ```bash
-PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py +model.new_key=value
+python -m src.main +model.new_key=value
 ````
 
 ### Tracker 
@@ -38,11 +38,11 @@ You can set the `WANDB_MODE` environment variable to control the tracking mode, 
 By default, it is set to `online`, which means it will log to the cloud.
 If you wish to disable tracking, simply run with
 ```bash
-PYTHONPATH="$PWD/src:$PYTHONPATH" python src/main.py tracker.mode=disabled
+python -m src.main tracker.mode=disabled
 ```
 Or
 ```bash
-PYTHONPATH="$PWD/src:$PYTHONPATH" WANDB_MODE=disabled python src/main.py
+WANDB_MODE=disabled python -m src.main
 ```
 
 
