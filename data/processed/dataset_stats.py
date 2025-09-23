@@ -49,10 +49,15 @@ def plot_dataset_statistics(dataset):
     
     # Composition year distribution
     plt.subplot(1, 2, 1)
-    plt.hist(comp_years, bins=30, color='lightgreen', edgecolor='black')
+    min_year = (min(comp_years) // 10) * 10
+    max_year = ((max(comp_years) // 10) + 1) * 10
+    bins = list(range(min_year, max_year + 1, 10))
+    plt.hist(comp_years, bins=bins, color='lightgreen', edgecolor='black')
     plt.title('Estimated Composition Year Distribution')
     plt.xlabel('Year')
-    plt.ylabel('Count')
+    plt.ylabel('Count (log scale)')
+    plt.yscale('log')
+
     
     # Text length distribution
     plt.subplot(1, 2, 2)
