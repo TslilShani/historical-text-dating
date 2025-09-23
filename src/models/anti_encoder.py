@@ -14,10 +14,6 @@ class AntiEncoder(nn.Module):
         cfg: DictConfig,
         encoder: nn.Module,
     ):
-<<<<<<< HEAD
-=======
-        """ """
->>>>>>> 6f1be33 (Moved some stuff, renamed some other)
         super().__init__()
 
         self.encoder = encoder
@@ -41,35 +37,21 @@ class AntiEncoder(nn.Module):
 
     def compute_loss(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         """
-<<<<<<< HEAD
         Compute the loss between logits and ground truth labels.
         Than swaps it!
 
         Args:
             logits: Model logits (batch_size, seq_len, vocab_size)
             labels: Ground truth token indices (batch_size, seq_len)
-=======
-        Compute the loss between predictions and ground truth labels.
-
-        Args:
-            logits: Model predictions (batch_size,)
-            labels: Ground truth dates (batch_size,)
->>>>>>> 6f1be33 (Moved some stuff, renamed some other)
 
         Returns:
             Computed loss tensor
         """
-<<<<<<< HEAD
         loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
         # Reshape for MLM: [batch_size * seq_len, vocab_size], [batch_size * seq_len]
         loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
         # Negate for anti-learning
         return -loss
-=======
-        # Use Mean Squared Error loss for regression
-        loss_fn = nn.MSELoss()
-        return loss_fn(logits, labels.float())
->>>>>>> 6f1be33 (Moved some stuff, renamed some other)
 
     def get_model_file_name(self):
         """
