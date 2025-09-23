@@ -164,13 +164,13 @@ class DatePredictionHead(nn.Module):
         logits = self.head(pooled_output)
 
         # Squeeze if single output
-        if self.num_classes == 1:
-            predicted_dates = logits.squeeze(-1)
-        else:
-            # Apply softmax activation to normalize output
-            predicted_dates = torch.softmax(logits, dim=-1)
+        # if self.num_classes == 1:
+        #     predicted_dates = logits.squeeze(-1)
+        # else:
+        #     # Apply softmax activation to normalize output
+        #     predicted_dates = torch.softmax(logits, dim=-1)
 
-        return predicted_dates
+        return logits
 
 
 class HistoricalTextDatingModel(nn.Module):
@@ -308,7 +308,7 @@ class HistoricalTextDatingModel(nn.Module):
             Computed loss tensor
         """
         # Use Mean Squared Error loss for regression
-        loss_fn = nn.MSELoss()
+        loss_fn = nn.CrossEntropyLoss()
         return loss_fn(logits, labels.float())
 
     def get_encoder_outputs(
