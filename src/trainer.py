@@ -219,6 +219,7 @@ class Trainer:
                     )
                     loss = loss.mean()
                     losses.append(loss.item())
+<<<<<<< HEAD
                 if not self.cfg.training.is_mlm:
                     probs = torch.softmax(logits, dim=-1)
                     all_predictions.append(probs.detach().cpu().numpy())
@@ -227,6 +228,13 @@ class Trainer:
                     # Collect logits and labels for MLM evaluation
                     mlm_logits.append(logits.detach().cpu().numpy())
                     mlm_labels.append(labels.detach().cpu().numpy())
+=======
+
+                # Apply softmax to logits for probabilities
+                probs = torch.softmax(logits, dim=-1)
+                all_predictions.append(probs.detach().cpu().numpy())
+                all_labels.append(y.detach().cpu().numpy())
+>>>>>>> 4c106fc (Fixed probs and logits bug)
 
                 if is_train:
                     model.zero_grad()
