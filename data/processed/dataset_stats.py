@@ -84,6 +84,7 @@ def plot_dataset_statistics(dataset):
 if __name__ == "__main__":
     from BenYehudaData.ben_yehuda_dataset import BenYehudaDataset
     from SefariaData.sefaria_dataset import SefariaDataset
+    from RoyalSocietyData.royal_society_dataset import RoyalSocietyDataset
     
     print("=== Loading BenYehuda Dataset ===")
     raw_data_path = "data/raw/BenYehudaData/"
@@ -98,9 +99,15 @@ if __name__ == "__main__":
     sefaria_dataset = SefariaDataset(
         sefaria_export_path=raw_data_path + "Sefaria-Export-master",
     )
+
+    print("\n=== Loading Royal Society Dataset ===")
+    raw_data_path = "data/raw/RoyalSocietyData/"
+    royal_society_dataset = RoyalSocietyDataset(
+        meta_path=raw_data_path + "Royal_Society_Corpus_open_v6.0_meta.tsv",
+        txt_dir=raw_data_path + "Royal_Society_Corpus_open_v6.0_texts_txt"
+    )
     
     print("\n=== Dataset Statistics ===")
-    total_dataset = torch.utils.data.ConcatDataset([sefaria_dataset, ben_yehuda_dataset])
+    total_dataset = torch.utils.data.ConcatDataset([royal_society_dataset, sefaria_dataset, ben_yehuda_dataset])
     print_dataset_statistics(total_dataset)
     plot_dataset_statistics(total_dataset)
-
