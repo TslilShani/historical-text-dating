@@ -1,0 +1,22 @@
+# Data configuration for Ben Yehuda dataset with default parameters
+dataset_name: "royal_society"
+max_length: 512
+
+# Dataset loading parameters
+encoding: "utf-8"
+verbose: true
+specific_comp_range: false
+return_as_labels: false
+
+# Data splitting
+train_ratio: 0.8
+eval_ratio: 0.1
+test_ratio: 0.1
+shuffle: true
+
+# Text preprocessing
+min_text_length: 50
+max_text_length: 3000
+filter_by_date_range: true
+min_date: 1000
+max_date: 2024

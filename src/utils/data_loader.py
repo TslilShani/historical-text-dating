@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from data.processed.BenYehudaData.ben_yehuda_dataset import BenYehudaDataset
 from data.processed.SefariaData.sefaria_dataset import SefariaDataset
+from data.processed.RoyalSocietyData.royal_society_dataset import RoyalSocietyDataset
 
 # Add the processed data directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent / "data" / "processed"))
@@ -246,7 +247,7 @@ class DataLoadAndFilter:
 
     def __init__(self, cfg: DictConfig):
         self.cfg = cfg
-        self.dataset_name = cfg.data.get("dataset_name", "ben_yehuda")
+        self.dataset_name = cfg.data.get("dataset_name", "all")
         self.max_length = cfg.data.get("max_length", 512)
         self.unique_date_ranges = []
 
@@ -259,6 +260,10 @@ class DataLoadAndFilter:
             dataset = BenYehudaDataset.load_ben_yehuda_dataset(self.cfg, base_path)
         elif self.dataset_name == "sefaria":
             dataset = SefariaDataset.load_sefaria_dataset(self.cfg, base_path)
+        elif self.dataset_name == "royal_society":
+            dataset = RoyalSocietyDataset.load_royal_society_dataset(
+                self.cfg, base_path
+            )
         elif self.dataset_name == "all":
             sefaria_dataset: SefariaDataset = SefariaDataset.load_sefaria_dataset(
                 self.cfg, base_path
@@ -266,12 +271,19 @@ class DataLoadAndFilter:
             ben_yehuda_dataset: BenYehudaDataset = (
                 BenYehudaDataset.load_ben_yehuda_dataset(self.cfg, base_path)
             )
+            royal_society_dataset: RoyalSocietyDataset = (
+                RoyalSocietyDataset.load_royal_society_dataset(self.cfg, base_path)
+            )
+
             # A trick to unite the labels from both datasets
             self.unique_date_ranges = sorted(
                 ben_yehuda_dataset.unique_date_ranges
                 + sefaria_dataset.unique_date_ranges
+                + royal_society_dataset.unique_date_ranges
             )
-            dataset = ConcatDataset([sefaria_dataset, ben_yehuda_dataset])
+            dataset = ConcatDataset(
+                [royal_society_dataset, sefaria_dataset, ben_yehuda_dataset]
+            )
         else:
             logger.error(f"Unknown dataset: {self.dataset_name}")
             dataset = None

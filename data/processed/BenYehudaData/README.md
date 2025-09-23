@@ -37,3 +37,16 @@ Total number of characters: 329398326
 ```
 
 Also save plot to `Dist_1`
+
+```
+Loading Ben Yehuda texts: 21208it [00:03, 5916.88it/s]
+Number of text samples: 20099
+
+Text Content:
+  Total characters: 329,491,055
+  Average characters per text: 16,393
+
+Composition Year Estimations Statistics:
+  Range: -400 - 2010
+  Mean: 1705
+```
