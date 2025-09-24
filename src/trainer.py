@@ -206,7 +206,7 @@ class Trainer:
                     input_ids = batch[0].to(self.device)
                     attention_mask = None
                     labels = batch[1].to(self.device)
-                
+
                 with torch.set_grad_enabled(is_train):
                     logits, loss = model(
                         input_ids=input_ids,

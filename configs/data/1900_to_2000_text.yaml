@@ -13,11 +13,10 @@ train_ratio: 0.8
 eval_ratio: 0.1
 test_ratio: 0.1
 shuffle: true
-sample_count: 100
 
 # Text preprocessing
 min_text_length: 50
 max_text_length: 3000
 filter_by_date_range: true
-min_date: 1000
+min_date: 1900
 max_date: 2000
