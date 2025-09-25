@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
+from tqdm import tqdm
 from typing import Union, List, Tuple, Dict, Any
 
 
@@ -22,6 +23,40 @@ def print_dataset_statistics(dataset):
     print(f"\nComposition Year Estimations Statistics:")
     print(f"  Range: {min(comp_years_all)} - {max(comp_years_all)}")
     print(f"  Mean: {sum(comp_years_all)/len(comp_years_all):.0f}")
+
+
+def evaluate_with_tokenizer(tokenizer, texts: List[str], batch_size: int = 32) -> Tuple[float, float, int, float]:
+    """Evaluate average and max token lengths, and count unknown tokens using a tokenizer (batched)."""
+    token_lengths = []
+    unk_token_count = 0
+    total_token_count = 0
+
+    # Get the unknown token id for the tokenizer
+    unk_token_id = tokenizer.unk_token_id if hasattr(tokenizer, "unk_token_id") else tokenizer.vocab.get("[UNK]", None)
+
+    # Convert texts to list if it's a generator
+    if not isinstance(texts, list):
+        texts = list(texts)
+
+    for i in tqdm(range(0, len(texts), batch_size)):
+        batch = texts[i:i+batch_size]
+        encodings = tokenizer(batch, return_attention_mask=False, add_special_tokens=True)
+        input_ids_batch = encodings["input_ids"]
+        for input_ids in input_ids_batch:
+            token_lengths.append(len(input_ids))
+            total_token_count += len(input_ids)
+            if unk_token_id is not None:
+                unk_token_count += sum(1 for t in input_ids if t == unk_token_id)
+
+    avg_length = sum(token_lengths) / len(token_lengths)
+    max_length = max(token_lengths)
+    unk_token_ratio = unk_token_count / total_token_count if total_token_count > 0 else 0
+
+    print(f"\nTokenization Statistics:")
+    print(f"  Total tokens: {total_token_count:,}")
+    print(f"  Average token length: {avg_length:.2f}")
+    print(f"  Max token length: {max_length}")
+    print(f"  Unknown tokens: {unk_token_count} ({unk_token_ratio:.2%})")
 
 
 def plot_dataset_statistics(dataset):
@@ -91,7 +126,7 @@ if __name__ == "__main__":
     ben_yehuda_dataset = BenYehudaDataset(
         pseudocatalogue_path=raw_data_path + "public_domain_dump-2025-03/pseudocatalogue.csv",
         authors_dir=raw_data_path + "scraper/benyehuda_data/authors",
-        txt_dir=raw_data_path + "public_domain_dump-2025-03/txt"
+        txt_dir=raw_data_path + "public_domain_dump-2025-03/txt",
     )
     
     print("\n=== Loading Sefaria Dataset ===")
@@ -111,3 +146,9 @@ if __name__ == "__main__":
     total_dataset = torch.utils.data.ConcatDataset([royal_society_dataset, sefaria_dataset, ben_yehuda_dataset])
     print_dataset_statistics(total_dataset)
     plot_dataset_statistics(total_dataset)
+
+    from transformers import BertTokenizerFast
+    tokenizer = BertTokenizerFast.from_pretrained("google-bert/bert-base-multilingual-cased")
+    all_texts = (sample['text'] for sample in total_dataset)
+    evaluate_with_tokenizer(tokenizer, all_texts)
+

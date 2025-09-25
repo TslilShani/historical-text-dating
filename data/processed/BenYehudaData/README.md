@@ -50,3 +50,11 @@ Composition Year Estimations Statistics:
   Range: -400 - 2010
   Mean: 1705
 ```
+
+```
+Tokenization Statistics:
+  Total tokens: 163,750,139
+  Average token length: 8147.18
+  Max token length: 1072861
+  Unknown tokens: 2933987 (1.79%)
+```

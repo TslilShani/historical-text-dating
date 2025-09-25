@@ -10,3 +10,11 @@ Composition Year Estimations Statistics:
   Range: 1660 - 1920
   Mean: 1830
 ```
+
+```
+Tokenization Statistics:
+  Total tokens: 102,462,345
+  Average token length: 5848.31
+  Max token length: 399871
+  Unknown tokens: 5840 (0.01%)
+```
