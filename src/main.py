@@ -1,4 +1,5 @@
 from omegaconf import DictConfig, OmegaConf
+from src.constants import CONFIG_DIR, DEFAULT_CONFIG_NAME
 import hydra
 import logging
 from hydra.utils import instantiate
@@ -8,7 +9,6 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.constants import CONFIG_DIR
 from src.utils import init_tracker, DataLoadAndFilter
 from src.trainer import Trainer
 from src.model_head import HistoricalTextDatingModel, create_model_head_config
@@ -26,7 +26,9 @@ def train_head(cfg: DictConfig, encoder):
     # Load datasets using the data loader
     logger.info("Loading datasets...")
     data_loader = DataLoadAndFilter(cfg)
-    train_dataset, eval_dataset = data_loader.create_tokenized_datasets(tokenizer)
+    train_dataset, eval_dataset, test_dataset = data_loader.create_tokenized_datasets(
+        tokenizer
+    )
 
     model_head_config = create_model_head_config(**cfg.model.model_head.head_config)
     model_head_config["num_classes"] = len(train_dataset[0][1])
@@ -39,7 +41,7 @@ def train_head(cfg: DictConfig, encoder):
 
     # Create trainer from config
     logger.info("Creating trainer...")
-    trainer = Trainer(model, train_dataset, eval_dataset, cfg)
+    trainer = Trainer(model, train_dataset, eval_dataset, cfg, test_dataset)
 
     # Start training
     logger.info("Starting training...")
@@ -58,7 +60,7 @@ def forget_encoder(cfg: DictConfig, encoder):
     logger.info("Adding noise completed successfully!")
 
 
-@hydra.main(version_base=None, config_path=CONFIG_DIR, config_name="defaults")
+@hydra.main(version_base=None, config_path=CONFIG_DIR, config_name=DEFAULT_CONFIG_NAME)
 def main(cfg: DictConfig):
     set_seed(cfg)
 

@@ -13,5 +13,5 @@ scheduler:
   scheduler_type: "LinearLR"
   start_factor: 1.0
   end_factor: 0.01
-seed: 1234
+seed: 42
 ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/

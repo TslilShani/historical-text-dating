@@ -8,17 +8,17 @@ defaults:
 
 hydra:
   run:
-    dir: ./outputs/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ./outputs/${model.name}/${training.objective}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweeper:
     params:
       # grid of hyper‑parameters to search
       training.batch_size: 16,32
       training.learning_rate: 5e-5,2e-5,1e-5
-      training.max_epochs: 2.3,5
+      training.max_epochs: 2,3,5
   sweep:
-    dir: outputs/multirun/${model.name}/${data.dataset_name}
+    dir: outputs/multirun/${model.name}/${training.objective}
     subdir: batch_size=${training.batch_size},lr=${training.learning_rate},max_epochs=${training.max_epochs}
 
   job_logging:
     root:
-      level: INFO # Could be DEBUG, INFO, WARNING, ERROR, CRITICAL
+      level: DEBUG # Could be DEBUG, INFO, WARNING, ERROR, CRITICAL

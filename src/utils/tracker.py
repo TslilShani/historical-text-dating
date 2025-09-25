@@ -9,6 +9,11 @@ hydra_mode_to_job_type = {RunMode.RUN: "single-run", RunMode.MULTIRUN: "grid-sea
 def init_tracker(cfg: DictConfig):
     hc = HydraConfig.get()
     tags = [cfg.model.name]
+    job_type = (
+        cfg.tracker.job_type
+        if cfg.tracker.get("job_type")
+        else hydra_mode_to_job_type.get(hc.mode, "unknown")
+    )
     return wandb.init(
         project=cfg.tracker.project,
         entity=cfg.tracker.entity,
@@ -17,5 +22,5 @@ def init_tracker(cfg: DictConfig):
         mode=cfg.tracker.mode,
         tags=[str(tag) for tag in tags],
         group=cfg.tracker.group,
-        job_type=hydra_mode_to_job_type.get(hc.mode, "unknown"),
+        job_type=job_type,
     )
