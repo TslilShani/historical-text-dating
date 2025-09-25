@@ -3,8 +3,7 @@ TAU NLP course 2025
 Enhanced training loop with WandB and Hydra integration
 """
 
-import os
-import math
+import json
 import logging
 from tqdm import tqdm
 from pathlib import Path
@@ -18,7 +17,7 @@ from torch.optim.lr_scheduler import LambdaLR, LinearLR, CosineAnnealingLR, Step
 from torch.utils.data.dataloader import DataLoader
 from omegaconf import DictConfig
 from hydra.core.hydra_config import HydraConfig
-from .consts import DatasetSplitName
+from src.constants import RESULTS_FILE_NAME, DatasetSplitName
 
 from src.utils.evaluator import Evaluator
 
@@ -29,10 +28,13 @@ logger = logging.getLogger(__name__)
 class Trainer:
     """Enhanced trainer with WandB and Hydra integration"""
 
-    def __init__(self, model, train_dataset, eval_dataset, cfg: DictConfig):
+    def __init__(
+        self, model, train_dataset, eval_dataset, cfg: DictConfig, test_dataset=None
+    ):
         self.model = model
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
+        self.test_dataset = test_dataset
         self.cfg = cfg
         self.training_cfg = cfg.training
         self.evaluator = Evaluator()
@@ -121,6 +123,13 @@ class Trainer:
             else:
                 wandb.log(metrics)
 
+    @staticmethod
+    def save_results_dict(results: Dict[str, Any], filename: Path):
+        """Save results dictionary to a JSON file"""
+        with open(filename, "w") as f:
+            json.dump(results, f, indent=4)
+        logger.info(f"Results saved to {filename}")
+
     def train(self):
         """Main training loop with WandB integration"""
         model = self.model
@@ -181,7 +190,11 @@ class Trainer:
             nonlocal step, best_loss
             is_train = split == DatasetSplitName.TRAIN
             model.train(is_train)
-            data = self.train_dataset if is_train else self.eval_dataset
+            data = (
+                self.train_dataset
+                if is_train
+                else (self.eval_dataset or self.test_dataset)
+            )
             loader = DataLoader(
                 data,
                 batch_size=self.cfg.training.batch_size,
@@ -280,16 +293,28 @@ class Trainer:
                 }
                 self.log_metrics(res)
 
+            return res
             # Save checkpoint at end of each epoch
             # self.save_checkpoint(cfg, self.model, res)
 
+        results = None
         # Training loop
         for epoch in range(self.cfg.training.max_epochs):
             logger.info(f"Starting epoch {epoch + 1}/{self.cfg.training.max_epochs}")
 
             run_epoch(DatasetSplitName.TRAIN)
             if self.eval_dataset is not None:
-                run_epoch(DatasetSplitName.VALIDATION)
+                results = run_epoch(DatasetSplitName.VALIDATION)
+            elif self.test_dataset is not None:
+                # If validation dataset is not provided, test set should be available and we evaluate on it
+                results = run_epoch(DatasetSplitName.TEST)
+
+        # Save the results of the last epoch eval
+        if results is not None:
+            results_file = (
+                Path(HydraConfig.get().runtime.output_dir) / RESULTS_FILE_NAME
+            )
+            self.save_results_dict(results, results_file)
 
         self.save_checkpoint(self.cfg, self.model, {}, self.get_tags())
 

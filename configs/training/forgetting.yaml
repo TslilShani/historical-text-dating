@@ -1,7 +1,7 @@
 # Training configuration for forgetting data from encoder
 objective: "forgetting"
 
-seed: 1234
+seed: 42 # Meaning of life, the universe, and everything
 ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
 
 # Noise configuration for forgetting
