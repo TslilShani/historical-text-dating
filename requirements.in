@@ -10,6 +10,7 @@ transformers
 
 # Configuration management
 hydra-core
+hydra-submitit-launcher
 
 # Data handling
 datasets
