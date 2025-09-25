@@ -18,3 +18,12 @@ Composition Year Statistics:
 ```
 
 Maybe cltk-flat might have been easier but I already wrote all the code, oops
+
+```
+
+Tokenization Statistics:
+  Total tokens: 583,727,015
+  Average token length: 111419.55
+  Max token length: 15332346
+  Unknown tokens: 1010374 (0.17%)
+```
