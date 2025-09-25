@@ -357,15 +357,9 @@ class DataLoadAndFilter:
         return train_dataset, eval_dataset, test_dataset
 
     def create_tokenized_datasets(
-<<<<<<< HEAD
-        self, tokenizer, base_path: str = None
+        self, tokenizer, base_path: str = ""
     ) -> Tuple[
         TokenizedDataset, Optional[TokenizedDataset], Optional[TokenizedDataset]
-    ]:
-=======
-        self, tokenizer, base_path: str = ""
-    ) -> Tuple[TokenizedDataset, Optional[TokenizedDataset]]:
->>>>>>> a52e05e (Minor bugfix)
         """Create tokenized datasets with the provided tokenizer"""
         train_dataset, eval_dataset, test_dataset = self.load_datasets(base_path)
 
