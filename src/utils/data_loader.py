@@ -414,3 +414,6 @@ class MLMDataset(Dataset):
             "attention_mask": attention_mask,
             "labels": labels,
         }
+
+    def get_dataset_name(self):
+        return f"MLMDataset-{self.dataset.__class__.__name__}-maxlen{self.max_length}-mlm_prob{self.mlm_probability}"
