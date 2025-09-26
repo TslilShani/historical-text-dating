@@ -416,4 +416,4 @@ class MLMDataset(Dataset):
         }
 
     def get_dataset_name(self):
-        return f"MLMDataset-{self.dataset.__class__.__name__}-maxlen{self.max_length}-mlm_prob{self.mlm_probability}"
+        return f"MLMDataset-{self.dataset.__class__.__name__}-maxlen{self.max_length}-mlm_prob{str(self.mlm_probability).replace('.', '_')}"
