@@ -188,6 +188,8 @@ class Trainer:
             losses = []
             all_predictions = []
             all_labels = []
+            mlm_logits = []
+            mlm_labels = []
             pbar = (
                 tqdm(enumerate(loader), total=len(loader))
                 if is_train
@@ -219,6 +221,10 @@ class Trainer:
                     probs = torch.softmax(logits, dim=-1)
                     all_predictions.append(probs.detach().cpu().numpy())
                     all_labels.append(labels.detach().cpu().numpy())
+                else:
+                    # Collect logits and labels for MLM evaluation
+                    mlm_logits.append(logits.detach().cpu().numpy())
+                    mlm_labels.append(labels.detach().cpu().numpy())
 
                 if is_train:
                     model.zero_grad()
@@ -260,7 +266,6 @@ class Trainer:
             avg_loss = np.mean(losses)
             if not is_train:
                 logger.info("%s loss: %f", split, avg_loss)
-                # Only run evaluator for classification
                 if not self.cfg.training.is_mlm:
                     evaluation_dict = self.evaluator.end_of_epoch_eval(
                         all_predictions, all_labels, prefix=split
@@ -271,7 +276,15 @@ class Trainer:
                         **evaluation_dict,
                     }
                 else:
-                    res = {"eval/loss": avg_loss, "eval/epoch": epoch}
+                    # MLM: evaluate accuracy
+                    evaluation_dict = self.evaluator.mlm_eval(
+                        mlm_logits, mlm_labels, prefix=split
+                    )
+                    res = {
+                        "eval/loss": avg_loss,
+                        "eval/epoch": epoch,
+                        **evaluation_dict,
+                    }
                 if avg_loss < best_loss:
                     best_loss = avg_loss
             else:
@@ -285,9 +298,14 @@ class Trainer:
                         **evaluation_dict,
                     }
                 else:
+                    # MLM: evaluate accuracy
+                    evaluation_dict = self.evaluator.mlm_eval(
+                        mlm_logits, mlm_labels, prefix=split
+                    )
                     res = {
                         "train/epoch_loss": avg_loss,
                         "train/epoch": epoch,
+                        **evaluation_dict,
                     }
             self.log_metrics(res)
 

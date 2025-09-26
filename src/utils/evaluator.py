@@ -130,3 +130,27 @@ class Evaluator:
         except Exception as e:
             logger.warning(f"Could not calculate Acc@K (K={K}): {e}")
             return 0.0
+
+    def mlm_eval(self, logits_list, labels_list, prefix: str):
+        """
+        Evaluate MLM accuracy: percent of masked tokens predicted correctly.
+
+        Args:
+            logits_list: List of [batch_size, seq_len, vocab_size] logits tensors (on CPU).
+            labels_list: List of [batch_size, seq_len] label tensors (on CPU).
+            prefix: Metric prefix.
+
+        Returns:
+            Dict of metrics.
+        """
+        total = 0
+        correct = 0
+        for logits, labels in zip(logits_list, labels_list):
+            # logits: [batch_size, seq_len, vocab_size]
+            # labels: [batch_size, seq_len], -100 for non-masked positions
+            pred_tokens = np.argmax(logits, axis=-1)  # [batch_size, seq_len]
+            mask = labels != -100
+            total += np.sum(mask)
+            correct += np.sum((pred_tokens == labels) & mask)
+        accuracy = correct / total if total > 0 else 0.0
+        return {f"{prefix}/mlm_accuracy": accuracy}
