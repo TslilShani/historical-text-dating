@@ -1,6 +1,7 @@
 # Training configuration for head training
 objective: "head-training"
 is_mlm: false
+start_with_eval: false
 max_epochs: 10
 batch_size: 8
 learning_rate: 2e-5

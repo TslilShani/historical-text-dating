@@ -291,6 +291,9 @@ class Trainer:
                     }
             self.log_metrics(res)
 
+        if self.cfg.training.start_with_eval and self.eval_dataset is not None:
+            epoch = -1
+            run_epoch(DatasetSplitName.VALIDATION)
         # Training loop
         for epoch in range(self.cfg.training.max_epochs):
             logger.info(f"Starting epoch {epoch + 1}/{self.cfg.training.max_epochs}")
