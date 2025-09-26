@@ -310,6 +310,7 @@ class Trainer:
             self.log_metrics(res)
 
         if self.cfg.training.start_with_eval and self.eval_dataset is not None:
+            logger.info("Starting with initial evaluation before training")
             epoch = -1
             run_epoch(DatasetSplitName.VALIDATION)
         # Training loop
