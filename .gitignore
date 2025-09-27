@@ -27,4 +27,4 @@ app.log
 # Ignore wandb's local output
 wandb/*
 
-cache/*.cache
+cache/**/*.cache
