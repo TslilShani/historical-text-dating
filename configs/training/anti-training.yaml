@@ -2,6 +2,7 @@
 objective: "anti-training"
 is_mlm: true
 start_with_eval: true
+max_train_steps: 100
 max_epochs: 1
 batch_size: 8
 learning_rate: 2e-5

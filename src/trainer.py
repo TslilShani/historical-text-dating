@@ -197,8 +197,10 @@ class Trainer:
             )
 
             for it, batch in pbar:
+                if is_train and self.cfg.training.get("max_train_steps") is not None:
+                    if step >= self.cfg.training.max_train_steps:
+                        break
                 # Detect MLM batch by dict keys
-
                 if self.cfg.training.is_mlm:
                     input_ids = batch["input_ids"].to(self.device)
                     attention_mask = batch["attention_mask"].to(self.device)
