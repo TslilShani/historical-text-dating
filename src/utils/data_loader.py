@@ -277,9 +277,13 @@ class DataLoadAndFilter:
 
             # A trick to unite the labels from both datasets
             self.unique_date_ranges = sorted(
-                ben_yehuda_dataset.unique_date_ranges
-                + sefaria_dataset.unique_date_ranges
-                + royal_society_dataset.unique_date_ranges
+                list(
+                    set(
+                        ben_yehuda_dataset.unique_date_ranges
+                        + sefaria_dataset.unique_date_ranges
+                        + royal_society_dataset.unique_date_ranges
+                    )
+                )
             )
             dataset = ConcatDataset(
                 [royal_society_dataset, sefaria_dataset, ben_yehuda_dataset]
