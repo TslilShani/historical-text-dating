@@ -20,14 +20,7 @@ from src.models.noised_encoder import NoisedEncoder
 logger = logging.getLogger(__name__)
 
 
-def train_head(cfg: DictConfig, encoder):
-    # Load the model and tokenizer
-    logger.info("Loading the tokenizer...")
-
-    tokenizer = instantiate(cfg.model.tokenizer)
-    # Load datasets using the data loader
-    logger.info("Loading datasets...")
-    data_loader = DataLoadAndFilter(cfg)
+def train_head(cfg: DictConfig, encoder, tokenizer, data_loader):
     train_dataset, eval_dataset = data_loader.create_tokenized_datasets(tokenizer)
 
     model_head_config = create_model_head_config(**cfg.model.model_head.head_config)
@@ -50,23 +43,28 @@ def train_head(cfg: DictConfig, encoder):
     logger.info("Training completed successfully!")
 
 
-def noised_encoder(cfg: DictConfig, encoder):
+def noised_encoder(cfg: DictConfig, encoder, tokenizer, data_loader):
+    _, eval_dataset = data_loader.load_datasets()
+    mlm_eval_dataset = MLMDataset(eval_dataset, tokenizer, max_length=128)
+    trainer = Trainer(encoder, mlm_eval_dataset, mlm_eval_dataset, cfg)
+
+    assert cfg.training.max_epochs == 0, "For noise-adding, max_epochs should be 0"
+    logger.info("Evaluating encoder before adding noise")
+    trainer.train()
+
     logger.info("Adding noise to encoder")
     noised_encoder = NoisedEncoder(cfg, encoder)
     logger.info("Saving noised encoder to file")
     tags = ["seed-" + str(cfg.training.seed)]
     Trainer.save_checkpoint(cfg, noised_encoder, {}, tags)
 
+    logger.info("Evaluating encoder after adding noise")
+    trainer.train()
+
     logger.info("Adding noise completed successfully!")
 
 
-def anti_train_encoder(cfg: DictConfig, mlm_model):
-    logger.info("Loading the tokenizer...")
-    tokenizer = instantiate(cfg.model.tokenizer)
-
-    # Load datasets using the data loader
-    logger.info("Loading datasets...")
-    data_loader = DataLoadAndFilter(cfg)
+def anti_train_encoder(cfg: DictConfig, mlm_model, tokenizer, data_loader):
     train_dataset, eval_dataset = data_loader.load_datasets()
     mlm_train_dataset = MLMDataset(train_dataset, tokenizer, max_length=128)
     mlm_eval_dataset = MLMDataset(eval_dataset, tokenizer, max_length=128)
@@ -98,15 +96,21 @@ def main(cfg: DictConfig):
     # DEBUG to check configs are loaded properly
     logger.debug("Configurations: %s", OmegaConf.to_yaml(cfg))
 
+    logger.info("Loading the tokenizer...")
+    tokenizer = instantiate(cfg.model.tokenizer)
     logger.info("Loading the model...")
     encoder = instantiate(cfg.model.encoder)
 
+    # Load datasets using the data loader
+    logger.info("Loading datasets...")
+    data_loader = DataLoadAndFilter(cfg)
+
     if cfg.training.objective == "head-training":
-        train_head(cfg, encoder)
+        train_head(cfg, encoder, tokenizer, data_loader)
     elif cfg.training.objective == "noise-adding":
-        noised_encoder(cfg, encoder)
+        noised_encoder(cfg, encoder, tokenizer, data_loader)
     elif cfg.training.objective == "anti-training":
-        anti_train_encoder(cfg, encoder)
+        anti_train_encoder(cfg, encoder, tokenizer, data_loader)
     else:
         logger.error(f"Incorrect training objective: {cfg.training.objective}")
 

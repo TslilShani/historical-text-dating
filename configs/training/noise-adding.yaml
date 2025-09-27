@@ -1,6 +1,13 @@
 # Training configuration for forgetting data from encoder
 objective: "noise-adding"
 
+is_mlm: true
+start_with_eval: true
+max_epochs: 0
+batch_size: 8
+num_workers: 4
+
+
 seed: 1234
 ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
 
