@@ -1,7 +1,7 @@
 #! /bin/sh
 
 #SBATCH --job-name=hydra_sweep
-#SBATCH --partition=studentkillablex
+#SBATCH --partition=studentkillable
 #SBATCH --signal=USR1@120
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
