@@ -398,11 +398,13 @@ class MLMDataset(Dataset):
         # Create MLM labels
         labels = input_ids.clone()
         probability_matrix = torch.full(labels.shape, self.mlm_probability)
-        special_tokens_mask = self.tokenizer.get_special_tokens_mask(
-            labels.tolist(), already_has_special_tokens=True
-        )
-        probability_matrix = torch.tensor(special_tokens_mask) == 0
-        masked_indices = torch.bernoulli(probability_matrix.float()).bool()
+        special_tokens_mask = torch.tensor(
+            self.tokenizer.get_special_tokens_mask(
+                labels.tolist(), already_has_special_tokens=True
+            )
+        ).bool()
+        probability_matrix[special_tokens_mask] = 0.0  # Don't mask special tokens
+        masked_indices = torch.bernoulli(probability_matrix).bool()
         labels[~masked_indices] = -100  # Only compute loss on masked tokens
 
         # Replace masked input tokens with [MASK]
