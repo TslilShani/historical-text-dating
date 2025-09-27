@@ -323,11 +323,11 @@ class Trainer:
             if self.eval_dataset is not None:
                 run_epoch(DatasetSplitName.VALIDATION)
 
-        self.save_checkpoint(self.cfg, self.model, {}, self.get_tags())
+        if self.cfg.training.max_epochs > 0:
+            self.save_checkpoint(self.cfg, self.model, {}, self.get_tags())
 
         # Log final metrics
         if self.use_wandb and wandb.run is not None:
             wandb.log({"final/best_loss": best_loss})
-            wandb.finish()
 
         logger.info("Training completed!")

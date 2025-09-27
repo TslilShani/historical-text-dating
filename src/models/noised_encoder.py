@@ -100,7 +100,11 @@ class NoisedEncoder(nn.Module):
         Forward pass through the encoder with added noise.
         This method simply calls the encoder's forward method.
         """
-        return self.encoder(*args, **kwargs)
+        outputs = self.encoder(*args, **kwargs)
+
+        logits = outputs.logits
+        loss = outputs.loss
+        return logits, loss
 
     def get_model_file_name(self):
         """

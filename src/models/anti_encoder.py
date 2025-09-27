@@ -33,7 +33,8 @@ class AntiEncoder(nn.Module):
         loss = None
         if labels is not None:
             loss = self.compute_loss(logits, labels)
-
+        # TODO: I never checked that the outputs.loss is actually the same as
+        # ce_loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
         return logits, loss
 
     def compute_loss(

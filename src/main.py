@@ -46,7 +46,12 @@ def train_head(cfg: DictConfig, encoder, tokenizer, data_loader):
 def noised_encoder(cfg: DictConfig, encoder, tokenizer, data_loader):
     _, eval_dataset = data_loader.load_datasets()
     mlm_eval_dataset = MLMDataset(eval_dataset, tokenizer, max_length=128)
-    trainer = Trainer(encoder, mlm_eval_dataset, mlm_eval_dataset, cfg)
+
+    tmp_cfg = cfg.copy()
+    # original_std = cfg.training.noise.noise_std
+    tmp_cfg.training.noise.noise_std = 0.0  # No noise for initial eval
+    no_noise_encoder = NoisedEncoder(tmp_cfg, encoder)
+    trainer = Trainer(no_noise_encoder, mlm_eval_dataset, mlm_eval_dataset, tmp_cfg)
 
     assert cfg.training.max_epochs == 0, "For noise-adding, max_epochs should be 0"
     logger.info("Evaluating encoder before adding noise")
@@ -59,6 +64,7 @@ def noised_encoder(cfg: DictConfig, encoder, tokenizer, data_loader):
     Trainer.save_checkpoint(cfg, noised_encoder, {}, tags)
 
     logger.info("Evaluating encoder after adding noise")
+    trainer = Trainer(noised_encoder, mlm_eval_dataset, mlm_eval_dataset, cfg)
     trainer.train()
 
     logger.info("Adding noise completed successfully!")

@@ -2,8 +2,8 @@ defaults:
   - paths
   - model: multilingual_bert_for_mlm
   - tracker: wandb
-  - training: anti-training
-  - data: 1900_to_2000_text
+  - training: noise-adding
+  - data: historical_text_sample
   - _self_
 
 hydra:

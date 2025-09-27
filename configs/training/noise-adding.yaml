@@ -4,8 +4,20 @@ objective: "noise-adding"
 is_mlm: true
 start_with_eval: true
 max_epochs: 0
+
+# Fake - here for evaluation only
 batch_size: 8
 num_workers: 4
+learning_rate: 2e-5
+betas: [0.9, 0.999]
+grad_norm_clip: 1.0
+weight_decay: 0.01
+lr_decay: true
+warmup_steps: 100
+scheduler:
+  scheduler_type: "LinearLR"
+  start_factor: 1.0
+  end_factor: 0.01
 
 
 seed: 1234
