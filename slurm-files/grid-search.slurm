@@ -10,4 +10,7 @@
 #SBATCH --output=slurm_logs/%x_%j.out
 #SBATCH --error=slurm_logs/%x_%j.err
 
+export PYTHONUNBUFFERED=1
+export HYDRA_FULL_ERROR=1
+
 python -m src.main -m training=head-training hydra/launcher=submitit_slurm
