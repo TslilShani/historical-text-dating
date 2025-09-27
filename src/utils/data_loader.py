@@ -251,7 +251,7 @@ class DataLoadAndFilter:
         self.max_length = cfg.data.get("max_length", 512)
         self.unique_date_ranges = []
 
-    def load_base_dataset(self, base_path: str = None) -> Dataset:
+    def load_base_dataset(self, base_path: str = "") -> Dataset:
         """Load the base dataset based on configuration"""
         logger.info(f"Loading {self.dataset_name} dataset...")
 
@@ -277,9 +277,13 @@ class DataLoadAndFilter:
 
             # A trick to unite the labels from both datasets
             self.unique_date_ranges = sorted(
-                ben_yehuda_dataset.unique_date_ranges
-                + sefaria_dataset.unique_date_ranges
-                + royal_society_dataset.unique_date_ranges
+                list(
+                    set(
+                        ben_yehuda_dataset.unique_date_ranges
+                        + sefaria_dataset.unique_date_ranges
+                        + royal_society_dataset.unique_date_ranges
+                    )
+                )
             )
             dataset = ConcatDataset(
                 [royal_society_dataset, sefaria_dataset, ben_yehuda_dataset]
@@ -353,10 +357,15 @@ class DataLoadAndFilter:
         return train_dataset, eval_dataset, test_dataset
 
     def create_tokenized_datasets(
+<<<<<<< HEAD
         self, tokenizer, base_path: str = None
     ) -> Tuple[
         TokenizedDataset, Optional[TokenizedDataset], Optional[TokenizedDataset]
     ]:
+=======
+        self, tokenizer, base_path: str = ""
+    ) -> Tuple[TokenizedDataset, Optional[TokenizedDataset]]:
+>>>>>>> a52e05e (Minor bugfix)
         """Create tokenized datasets with the provided tokenizer"""
         train_dataset, eval_dataset, test_dataset = self.load_datasets(base_path)
 
