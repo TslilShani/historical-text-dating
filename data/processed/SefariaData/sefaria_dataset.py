@@ -284,7 +284,7 @@ class SefariaDataset(Dataset):
 
 
     @classmethod
-    def load_sefaria_dataset(cls, cfg, base_path: str = None) -> Optional[List[Dict[str, Any]]]:
+    def load_sefaria_dataset(cls, cfg, base_path: str = "") -> Optional[List[Dict[str, Any]]]:
         """Load Sefaria dataset with configuration parameters"""
         raw_data_path = "data/raw/SefariaData/"
         if base_path:

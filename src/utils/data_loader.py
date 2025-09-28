@@ -251,7 +251,7 @@ class DataLoadAndFilter:
         self.max_length = cfg.data.get("max_length", 512)
         self.unique_date_ranges = []
 
-    def load_base_dataset(self, base_path: str = None) -> Dataset:
+    def load_base_dataset(self, base_path: str = "") -> Dataset:
         """Load the base dataset based on configuration"""
         logger.info(f"Loading {self.dataset_name} dataset...")
 
@@ -326,7 +326,7 @@ class DataLoadAndFilter:
 
         return train_indices, eval_indices, test_indices
 
-    def load_datasets(self, base_path: str = None) -> Tuple[Dataset, Optional[Dataset]]:
+    def load_datasets(self, base_path: str = "") -> Tuple[Dataset, Optional[Dataset]]:
         """Main method to load and prepare datasets for training"""
         # Load base dataset
         base_dataset = self.load_base_dataset(base_path)
@@ -352,7 +352,7 @@ class DataLoadAndFilter:
         return train_dataset, eval_dataset
 
     def create_tokenized_datasets(
-        self, tokenizer, base_path: str = None
+        self, tokenizer, base_path: str = ""
     ) -> Tuple[TokenizedDataset, Optional[TokenizedDataset]]:
         """Create tokenized datasets with the provided tokenizer"""
         train_dataset, eval_dataset = self.load_datasets(base_path)
