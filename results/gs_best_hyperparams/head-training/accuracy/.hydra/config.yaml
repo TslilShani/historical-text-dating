@@ -1,0 +1,60 @@
+paths:
+  data_root: ${oc.env:DATA_ROOT,${hydra:runtime.cwd}/data}
+  results_root: ${hydra:runtime.output_dir}
+model:
+  name: google-bert/bert-base-multilingual-cased
+  tokenizer:
+    _target_: transformers.AutoTokenizer.from_pretrained
+    pretrained_model_name_or_path: ${..name}
+  encoder:
+    _target_: transformers.AutoModel.from_pretrained
+    pretrained_model_name_or_path: ${..name}
+  freeze_encoder: true
+  model_head:
+    _target_: src.model_head.HistoricalTextDatingModel
+    head_config:
+      hidden_sizes:
+      - 384
+      - 128
+      dropout_rate: 0.1
+      activation: relu
+      pooling_strategy: cls
+tracker:
+  project: historical-text-dating-experiment
+  entity: historical-text-dating
+  group: ${model.name}
+  name: ${now:%Y-%m-%d_%H-%M-%S}
+  mode: ${oc.env:WANDB_MODE,online}
+training:
+  objective: head-training
+  max_epochs: 10
+  batch_size: 32
+  learning_rate: 5.0e-05
+  betas:
+  - 0.9
+  - 0.999
+  grad_norm_clip: 1.0
+  weight_decay: 0.01
+  num_workers: 4
+  lr_decay: true
+  warmup_steps: 100
+  scheduler:
+    scheduler_type: LinearLR
+    start_factor: 1.0
+    end_factor: 0.01
+  seed: 42
+  ckpt_path: ./outputs/${.objective}/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
+data:
+  dataset_name: all
+  max_length: 512
+  encoding: utf-8
+  verbose: false
+  specific_comp_range: false
+  return_as_labels: false
+  train_ratio: 0.8
+  eval_ratio: 0.1
+  test_ratio: 0.1
+  shuffle: true
+  min_text_length: 50
+  max_text_length: 3000
+  filter_by_date_range: true

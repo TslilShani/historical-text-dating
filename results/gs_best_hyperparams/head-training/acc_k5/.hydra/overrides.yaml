@@ -1,0 +1,4 @@
+- training.batch_size=32
+- training.learning_rate=5e-05
+- training.max_epochs=10
+- training=head-training
