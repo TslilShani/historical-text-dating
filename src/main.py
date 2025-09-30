@@ -1,5 +1,4 @@
 from omegaconf import DictConfig, OmegaConf
-from src.constants import CONFIG_DIR, DEFAULT_CONFIG_NAME
 import hydra
 import logging
 from hydra.utils import instantiate
@@ -7,7 +6,11 @@ from hydra.utils import instantiate
 import os
 import sys
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.utils.model_loader import _clean_state_dict, load_model_from_wandb
+from src.constants import CONFIG_DIR, DEFAULT_CONFIG_NAME
 
 from src.utils import init_tracker, DataLoadAndFilter
 from src.trainer import Trainer
@@ -19,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def train_head(cfg: DictConfig, encoder):
+    new_model_weights = load_model_from_wandb(cfg)
     # Load the model and tokenizer
     logger.info("Loading the tokenizer...")
 
@@ -38,6 +42,23 @@ def train_head(cfg: DictConfig, encoder):
         head_config=model_head_config,
         freeze_encoder=cfg.model.freeze_encoder,  # Freeze encoder to not change bert
     )
+
+    if new_model_weights is not None:
+        new_model_weights = _clean_state_dict(new_model_weights)
+        missing, unexpected = model.load_state_dict(new_model_weights, strict=False)
+        logger.info(
+            f"Loaded model weights from WandB artifact. {len(new_model_weights)}"
+        )
+        if missing:
+            logger.error(
+                f"[load_state_dict] Missing keys: {len(missing)} (showing first 10)\n"
+            )
+            logger.error("\n".join(missing[:10]))
+        if unexpected:
+            logger.error(
+                f"[load_state_dict] Unexpected keys: {len(unexpected)} (showing first 10)\n"
+            )
+            logger.error("\n".join(unexpected[:10]))
 
     # Create trainer from config
     logger.info("Creating trainer...")
@@ -66,7 +87,6 @@ def main(cfg: DictConfig):
 
     # Initialize tracker (WandB)
     tracker_run = init_tracker(cfg)
-
     # DEBUG to check configs are loaded properly
     logger.debug("Configurations: %s", OmegaConf.to_yaml(cfg))
 
@@ -79,7 +99,6 @@ def main(cfg: DictConfig):
         forget_encoder(cfg, encoder)
     else:
         logger.error(f"Incorrect training objective: {cfg.training.objective}")
-
     # Finish the tracker run
     tracker_run.finish()
 

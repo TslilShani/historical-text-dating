@@ -93,7 +93,8 @@ class BenYehudaDataset(Dataset):
                         self._unique_date_ranges.add(sample["comp_date"])
                     self.samples.append(sample)
                 else:
-                    logger.debug(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
+                    pass
+                    # logger.debug(f"Skipping {txt_path} because it doesn't exist or author_id {author_id} is not in author_years")
         logger.info(f"Loaded {len(self.samples)} text samples from Ben Yehuda dataset")
 
     def __len__(self) -> int:

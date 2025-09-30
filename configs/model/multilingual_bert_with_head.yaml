@@ -18,3 +18,7 @@ model_head:
     dropout_rate: 0.1
     activation: "relu"
     pooling_strategy: "cls"
+
+
+model_name_from_wandb: null # "google-bert-bert-base-multilingual-cased-9kmjckak" # Noise
+                     # "google-bert-bert-base-multilingual-cased-nwgrl4xi" # Anti-learning

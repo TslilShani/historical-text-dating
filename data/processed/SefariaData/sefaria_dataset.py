@@ -141,7 +141,7 @@ class SefariaDataset(Dataset):
 
             text_path = json_dir / metadata['path'] / "merged.json"
             if not text_path.exists():
-                logger.debug(f"Path {text_path} does not exist - skipping")
+                # logger.debug(f"Path {text_path} does not exist - skipping")
                 continue
             with text_path.open(encoding=self.encoding) as f:
                 text_data = json.load(f)
