@@ -6,9 +6,9 @@ from hydra.utils import instantiate
 import os
 import sys
 
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.utils.system_info import get_system_info
 from src.utils.model_loader import _clean_state_dict, load_model_from_wandb
 from src.constants import CONFIG_DIR, DEFAULT_CONFIG_NAME
 
@@ -84,6 +84,7 @@ def forget_encoder(cfg: DictConfig, encoder):
 @hydra.main(version_base=None, config_path=CONFIG_DIR, config_name=DEFAULT_CONFIG_NAME)
 def main(cfg: DictConfig):
     set_seed(cfg)
+    get_system_info()
 
     # Initialize tracker (WandB)
     tracker_run = init_tracker(cfg)
