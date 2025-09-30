@@ -14,4 +14,4 @@ export PYTHONUNBUFFERED=1
 export HYDRA_FULL_ERROR=1
 
 
-python -m src.main -m training=head-training +is_final_run=true +tracker.job_type=final_evaluation hydra.sweeper.params={} training.seed=45,49,128 training.batch_size=32 training.learning_rate=5e-05 training.max_epochs=10 hydra/launcher=submitit_slurm model.model_name_from_wandb=google-bert-bert-base-multilingual-cased-nwgrl4xi
+python -m src.main -m training=head-training +is_final_run=true +tracker.job_type=final_evaluation hydra.sweeper.params={} training.seed=45,49,128 training.batch_size=32 training.learning_rate=5e-05 training.max_epochs=7 hydra/launcher=submitit_slurm model.model_name_from_wandb=google-bert-bert-base-multilingual-cased-nwgrl4xi model.freeze_encoder=false
