@@ -274,7 +274,11 @@ class Trainer:
                 evaluation_dict = self.evaluator.end_of_epoch_eval(
                     all_predictions, all_labels, prefix=split
                 )
-                res = {"eval/loss": avg_loss, "eval/epoch": epoch, **evaluation_dict}
+                res = {
+                    f"{split}/loss": avg_loss,
+                    f"{split}/epoch": epoch,
+                    **evaluation_dict,
+                }
                 # TODO - maybe remove
                 self.log_metrics(res)
 

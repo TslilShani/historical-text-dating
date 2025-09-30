@@ -327,7 +327,7 @@ class DataLoadAndFilter:
         return train_indices, eval_indices, test_indices
 
     def load_datasets(
-        self, base_path: str = ""
+        self, base_path: str = "", merge_train_and_eval: bool = False
     ) -> Tuple[Dataset, Optional[Dataset], Optional[Dataset]]:
         """Main method to load and prepare datasets for training"""
         # Load base dataset
@@ -346,6 +346,9 @@ class DataLoadAndFilter:
         )
 
         # Create split datasets
+        if merge_train_and_eval:
+            train_indices += eval_indices
+            eval_indices = []
         train_dataset = SplitDataset(filtered_dataset, train_indices)
         eval_dataset = (
             SplitDataset(filtered_dataset, eval_indices) if eval_indices else None
@@ -357,12 +360,14 @@ class DataLoadAndFilter:
         return train_dataset, eval_dataset, test_dataset
 
     def create_tokenized_datasets(
-        self, tokenizer, base_path: str = ""
+        self, tokenizer, base_path: str = "", merge_train_and_eval: bool = False
     ) -> Tuple[
         TokenizedDataset, Optional[TokenizedDataset], Optional[TokenizedDataset]
     ]:
         """Create tokenized datasets with the provided tokenizer"""
-        train_dataset, eval_dataset, test_dataset = self.load_datasets(base_path)
+        train_dataset, eval_dataset, test_dataset = self.load_datasets(
+            base_path, merge_train_and_eval
+        )
 
         train_tokenized = TokenizedDataset(
             train_dataset, tokenizer, self.unique_date_ranges, self.max_length

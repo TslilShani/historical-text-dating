@@ -30,8 +30,13 @@ def train_head(cfg: DictConfig, encoder):
     # Load datasets using the data loader
     logger.info("Loading datasets...")
     data_loader = DataLoadAndFilter(cfg)
+
+    # If is_final_run is set, we merge train and eval datasets for final training
+    is_final_run = cfg.get("is_final_run", False)
+    if is_final_run:
+        logger.info("Final run: Merging train and eval datasets for final training.")
     train_dataset, eval_dataset, test_dataset = data_loader.create_tokenized_datasets(
-        tokenizer
+        tokenizer, merge_train_and_eval=is_final_run
     )
 
     model_head_config = create_model_head_config(**cfg.model.model_head.head_config)

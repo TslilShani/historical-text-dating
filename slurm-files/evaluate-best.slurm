@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 #SBATCH --job-name=evaluate_best
 #SBATCH --partition=studentkillable
@@ -13,4 +13,7 @@
 export PYTHONUNBUFFERED=1
 export HYDRA_FULL_ERROR=1
 
-python -m src.main -m training=head-training +tracker.job_type=final_evaluation hydra.sweeper.params={} training.seed=98,128,45 training.batch_size=32 training.learning_rate=5e-05 training.max_epochs=10 hydra/launcher=submitit_slurm
+eval "$(/home/joberant/NLP_2425b/tslilshani/anaconda3/bin/conda shell.bash hook)"
+conda activate nlp_2025
+
+python -m src.main -m training=head-training +is_final_run=true +tracker.job_type=final_evaluation hydra.sweeper.params={} training.seed=45,49,128 training.batch_size=32 training.learning_rate=5e-05 training.max_epochs=10 hydra/launcher=submitit_slurm
