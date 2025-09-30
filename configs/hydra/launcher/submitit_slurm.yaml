@@ -1,0 +1,15 @@
+# @package hydra.launcher
+_target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
+
+name: ${hydra.job.name}_${oc.select:hydra.job.num,0}
+timeout_min: 1440 # 24 hours
+cpus_per_task: 4
+gpus_per_task: 1
+tasks_per_node: 1
+gres: "gpu:1"
+nodes: 1
+mem_gb: 50
+partition: studentkillable
+qos: null
+array_parallelism: 8
+submitit_folder: ${hydra.sweep.dir}/.submitit/%j
