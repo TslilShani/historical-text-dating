@@ -11,12 +11,12 @@ hydra:
     dir: ./outputs/${model.name}/${training.objective}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweeper:
     params:
-      # grid of hyper‑parameters to search
+      # grid of hyperparams search
       training.batch_size: 16,32
       training.learning_rate: 5e-5,2e-5,1e-5
-      training.max_epochs: 2,3,5
+      training.max_epochs: 2,3,5,10
   sweep:
-    dir: outputs/multirun/${model.name}/${training.objective}/${training.seed}
+    dir: outputs/multirun/${model.name}/${training.objective}/${oc.select:model_name_from_wandb,clean}/freeze__${model.freeze_encoder}/${training.seed}
     subdir: batch_size=${training.batch_size},lr=${training.learning_rate},max_epochs=${training.max_epochs}
 
   job_logging:
