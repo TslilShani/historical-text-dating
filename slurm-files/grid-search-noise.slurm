@@ -13,4 +13,8 @@
 export PYTHONUNBUFFERED=1
 export HYDRA_FULL_ERROR=1
 
+# activate conda environment
+source /home/joberant/NLP_2425b/tslilshani/anaconda3/etc/profile.d/conda.sh
+conda activate nlp_2025
+
 python -m src.main -m training=head-training hydra/launcher=submitit_slurm model.freeze_encoder=false training.max_epochs=10
