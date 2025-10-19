@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 #SBATCH --account=gpu-students
 #SBATCH --job-name=hydra_sweep_anti_training
