@@ -12,4 +12,9 @@ mem_gb: 50
 partition: studentkillable
 qos: null
 array_parallelism: 8
-submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+submitit_folder: ${oc.select:hydra:runtime.cwd,/home/joberant/NLP_2425v/tslilshani/historical-text-dating}/outputs/.submitit/%j
+
+
+additional_parameters:
+  mail-user: "tslilshani@mail.tau.ac.il"
+  mail-type: "FAIL"

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 #SBATCH --account=gpu-students
-#SBATCH --job-name=hydra_sweep_no_freeze
+#SBATCH --job-name=hydra_sweep_head_training
 #SBATCH --chdir=/home/joberant/NLP_2425b/tslilshani/historical-text-dating
 #SBATCH --partition=studentkillable
 #SBATCH --signal=USR1@120
@@ -22,4 +22,4 @@ export HYDRA_FULL_ERROR=1
 source /home/joberant/NLP_2425b/tslilshani/anaconda3/etc/profile.d/conda.sh
 conda activate nlp_2025
 
-python -m src.main -m training=head-training hydra/launcher=submitit_slurm model.freeze_encoder=false
+python -m src.main -m training=head-training hydra/launcher=submitit_slurm
