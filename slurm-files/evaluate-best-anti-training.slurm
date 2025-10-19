@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #SBATCH --job-name=evaluate_best
 #SBATCH --partition=studentkillable

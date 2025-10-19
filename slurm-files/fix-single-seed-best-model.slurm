@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #SBATCH --job-name=fix_45_seed_evaluate_best
 #SBATCH --partition=studentkillable

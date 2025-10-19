@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 
 #SBATCH --job-name=hydra_sweep_no_freeze
 #SBATCH --partition=studentkillable
